@@ -1,0 +1,23 @@
+<div class="form-container">
+  @if (showBanner()) {
+    <app-notification-banner
+      [message]="bannerMessage()"
+      [type]="messageType()"
+    ></app-notification-banner>
+  }
+  <form [formGroup]="loginForm" (ngSubmit)="loginUser()">
+    <h1>Login to Project_Z</h1>
+    <div>
+      <label for="email">Email</label>
+      <input type="email" placeholder="user@example.com" formControlName="email" />
+    </div>
+    <div>
+      <label for="password">Password</label>
+      <input type="password" formControlName="password" />
+    </div>
+    <div>
+      <button type="submit">Login</button>
+      <p>Don't have an account? <a routerLink="/signup">Signup</a></p>
+    </div>
+  </form>
+</div>

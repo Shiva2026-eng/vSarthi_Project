@@ -1,0 +1,18 @@
+div {
+  width: 40%;
+  padding: 1rem;
+  position: absolute;
+  top: 1rem;
+}
+.success {
+  background-color: green;
+  font-weight: 400;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: white;
+}
+.error {
+  background-color: red;
+  font-weight: 400;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: white;
+}
