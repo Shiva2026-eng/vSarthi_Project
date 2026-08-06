@@ -7,7 +7,7 @@ from services.llm import process_document
 from dependencies import db_dependency
 from models.Documents import Document
 from models.ProcessedDocuments import ProcessedDocument
-
+from uuid import UUID
 router = APIRouter(
     prefix="/documents",
     tags=["Documents"]
@@ -66,3 +66,17 @@ async def upload_document(
             status_code=500,
             detail=str(e)
         )
+
+@router.get("/get_all_documents")
+def get_all_documents_for_a_user(user:user_dependency,db:db_dependency):
+    id=user["id"]
+    documents=db.query(Document).filter(Document.user_id==id).all()
+    if len(documents)==0:
+        return {
+            "success":True,
+            "message":"No documents found for this user"
+        }
+    return {
+        "success":True,
+        "message":documents
+    }
