@@ -4,8 +4,9 @@ import { SectionBanner } from '../../components/LandingPage/section-banner/secti
 import { AuthService } from '../../services/auth-service';
 import { HttpClient } from '@angular/common/http';
 interface Response {
+  data: Document[];
   success: boolean;
-  message: Document[];
+  message: string;
 }
 interface Document {
   created_at: string;
@@ -16,6 +17,7 @@ interface Document {
   size: number;
   source: string;
   user_id: string;
+  processing_status: string;
 }
 @Component({
   selector: 'app-landing-page',
@@ -36,7 +38,8 @@ export class LandingPage implements OnInit {
       })
       .subscribe({
         next: (response) => {
-          this.documents.set(response.message);
+          console.log(response);
+          this.documents.set(response.data);
         },
         error: (e) => {
           console.log(e);

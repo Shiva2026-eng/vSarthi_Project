@@ -14,6 +14,8 @@
             <th>MIME Type</th>
             <th>Size</th>
             <th>Created At</th>
+            <th>processing_status</th>
+            <th>Action</th>
           </tr>
         </thead>
 
@@ -26,6 +28,17 @@
               <td>{{ doc.mime_type }}</td>
               <td>{{ getSizeInKB(doc.size) }} KB</td>
               <td>{{ doc.created_at }}</td>
+              <td>{{ doc.processing_status }}</td>
+              <td>
+                <!-- @if (doc.processing_status == 'completed') {
+                  <button>
+                    <p>View Summary</p>
+                  </button>
+                } @else {
+                  <button>Process Document</button>
+                } -->
+                hello
+              </td>
             </tr>
           }
         </tbody>
