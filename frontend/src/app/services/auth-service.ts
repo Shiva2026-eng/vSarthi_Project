@@ -4,6 +4,16 @@ interface TokenResponse {
   access_token: string;
   token_type: string;
 }
+interface UserResponse {
+  success: boolean;
+  details: {
+    id: string;
+    name: string;
+    email: string;
+    created_at: string;
+  };
+}
+
 @Service()
 export class AuthService {
   private http = inject(HttpClient);
@@ -25,5 +35,12 @@ export class AuthService {
   }
   removeAccessToken() {
     localStorage.setItem('access_token', '');
+  }
+  getUserInfo() {
+    return this.http.get<UserResponse>('http://127.0.0.1:8000/user/my_profile', {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+      },
+    });
   }
 }

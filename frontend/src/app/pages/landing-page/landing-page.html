@@ -1,1 +1,35 @@
-<p>landing-page works!</p>
+<div class="main-container">
+  <app-dashboard></app-dashboard>
+  <div class="docs">
+    <h1>Connect different services to your account</h1>
+    <app-section-banner></app-section-banner>
+    <div class="documents-table">
+      <h1>Your Documents</h1>
+      <table>
+        <thead>
+          <tr>
+            <th>Filename</th>
+            <th>Extension</th>
+            <th>Source</th>
+            <th>MIME Type</th>
+            <th>Size</th>
+            <th>Created At</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (doc of documents(); track doc.id) {
+            <tr>
+              <td>{{ doc.filename }}</td>
+              <td>{{ doc.extension }}</td>
+              <td>{{ doc.source }}</td>
+              <td>{{ doc.mime_type }}</td>
+              <td>{{ getSizeInKB(doc.size) }} KB</td>
+              <td>{{ doc.created_at }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

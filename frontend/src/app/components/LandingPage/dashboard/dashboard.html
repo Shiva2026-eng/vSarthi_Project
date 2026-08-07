@@ -1,1 +1,21 @@
-<p>dashboard works!</p>
+<div class="parent">
+  <header class="header">
+    <h1>Project_Z</h1>
+  </header>
+  <main class="content">
+    <h2>Welcome back, {{ name() }}</h2>
+
+    <span>Email:</span>
+    <p>{{ email() }}</p>
+
+    <span>User ID:</span>
+    <p>{{ id() }}</p>
+
+    <span>Joined On</span>
+    <p>{{ created_at() }}</p>
+  </main>
+
+  <div class="footer-actions">
+    <button (click)="onLogOut()">Logout</button>
+  </div>
+</div>
