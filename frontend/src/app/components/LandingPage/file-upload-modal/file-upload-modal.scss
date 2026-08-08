@@ -1,0 +1,109 @@
+.modal-container {
+  position: fixed;
+  inset: 0;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background: rgba(0, 0, 0, 0.55);
+
+  z-index: 1000;
+
+  animation: fadeIn 0.25s ease;
+}
+
+.modal {
+  width: 500px;
+  max-width: 90vw;
+
+  background: white;
+  border-radius: 14px;
+
+  padding: 2rem;
+
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+
+  animation: popIn 0.25s ease;
+}
+
+.modal h2 {
+  margin: 0;
+}
+
+.modal p {
+  color: #666;
+  margin: 0;
+}
+
+.modal input[type='file'] {
+  padding: 12px;
+
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+
+  cursor: pointer;
+}
+
+.actions {
+  display: flex;
+
+  justify-content: flex-end;
+
+  gap: 1rem;
+}
+
+.actions button {
+  padding: 0.75rem 1.4rem;
+
+  border: none;
+
+  border-radius: 8px;
+
+  cursor: pointer;
+
+  transition: 0.2s;
+}
+
+.upload-btn {
+  background: #2563eb;
+  color: white;
+}
+
+.upload-btn:hover {
+  background: #1d4ed8;
+}
+
+.cancel-btn {
+  background: #e5e7eb;
+}
+
+.cancel-btn:hover {
+  background: #d1d5db;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

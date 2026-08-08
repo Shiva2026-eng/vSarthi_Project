@@ -4,45 +4,72 @@
     <h1>Connect different services to your account</h1>
     <app-section-banner></app-section-banner>
     <div class="documents-table">
-      <h1>Your Documents</h1>
-      <table>
-        <thead>
-          <tr>
-            <th>Filename</th>
-            <th>Extension</th>
-            <th>Source</th>
-            <th>MIME Type</th>
-            <th>Size</th>
-            <th>Created At</th>
-            <th>processing_status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
+      <div class="upload-div">
+        <h1>Your Documents</h1>
+        <button (click)="toggleModal()">Upload a new document</button>
+      </div>
+      @if (documents().length == 0) {
+        <h4>No Document found for this user</h4>
+      } @else {
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Filename</th>
+                <th>Extension</th>
+                <th>Source</th>
+                <th>MIME Type</th>
+                <th>Size</th>
+                <th>Created At</th>
+                <th>Processing Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
 
-        <tbody>
-          @for (doc of documents(); track doc.id) {
-            <tr>
-              <td>{{ doc.filename }}</td>
-              <td>{{ doc.extension }}</td>
-              <td>{{ doc.source }}</td>
-              <td>{{ doc.mime_type }}</td>
-              <td>{{ getSizeInKB(doc.size) }} KB</td>
-              <td>{{ doc.created_at }}</td>
-              <td>{{ doc.processing_status }}</td>
-              <td>
-                <!-- @if (doc.processing_status == 'completed') {
-                  <button>
-                    <p>View Summary</p>
-                  </button>
-                } @else {
-                  <button>Process Document</button>
-                } -->
-                hello
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+            <tbody>
+              @for (doc of documents(); track doc.id) {
+                <tr>
+                  <td>{{ doc.filename }}</td>
+                  <td>{{ doc.extension }}</td>
+                  <td>{{ doc.source }}</td>
+                  <td>{{ doc.mime_type }}</td>
+                  <td>{{ getSizeInKB(doc.size) }} KB</td>
+                  <td>{{ doc.created_at }}</td>
+                  <td>
+                    <span class="status-badge" [class]="doc.processing_status">
+                      @if (isProcessing(doc)) {
+                        <span class="spinner-sm"></span> processing
+                      } @else {
+                        {{ doc.processing_status }}
+                      }
+                    </span>
+                  </td>
+                  <td>
+                    @if (doc.processing_status === 'completed') {
+                      <button class="action-btn summary-btn">
+                        <p>View Summary</p>
+                      </button>
+                    } @else if (isProcessing(doc)) {
+                      <button class="action-btn processing-btn" disabled>
+                        <span class="spinner"></span> Processing...
+                      </button>
+                    } @else {
+                      <button class="action-btn process-btn" (click)="sendForProcessing(doc.id)">
+                        Process Document
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
     </div>
   </div>
 </div>
+<app-file-upload-modal
+  [showModal]="showModal"
+  (toggleModal)="toggleModal()"
+  (fileUploaded)="onFileUploaded()"
+></app-file-upload-modal>

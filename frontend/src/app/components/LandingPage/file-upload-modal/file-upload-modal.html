@@ -1,0 +1,20 @@
+@if (showModal) {
+  <div class="modal-container" (click)="onCloseModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h2>Upload Document</h2>
+
+      <p>Select a PDF, DOCX or image to upload.</p>
+
+      <input type="file" (change)="onFileSelected($event)" [disabled]="isUploading" />
+
+      <div class="actions">
+        <button class="upload-btn" (click)="uploadFile()" [disabled]="isUploading">
+          {{ isUploading ? 'Uploading...' : 'Upload' }}
+        </button>
+
+        <button class="cancel-btn" (click)="onCloseModal()" [disabled]="isUploading">Cancel</button>
+      </div>
+    </div>
+  </div>
+}
+
