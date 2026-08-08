@@ -26,3 +26,6 @@ env/
 
 # Local SQLite database
 *.db
+
+# Uploads
+uploads/

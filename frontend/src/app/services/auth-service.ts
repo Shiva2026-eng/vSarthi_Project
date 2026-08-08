@@ -28,19 +28,31 @@ export class AuthService {
     return this.http.post('http://127.0.0.1:8000/auth/signup', data);
   }
   setAccessToken(token: string) {
-    localStorage.setItem('access_token', token);
+    if (token) {
+      localStorage.setItem('access_token', token);
+    }
   }
+
   getAccessToken(): string {
-    return localStorage.getItem('access_token') ?? '';
+    const token = localStorage.getItem('access_token');
+    return token && token.trim() !== '' ? token : '';
   }
+
   removeAccessToken() {
-    localStorage.setItem('access_token', '');
+    localStorage.removeItem('access_token');
   }
+
+  isLoggedIn(): boolean {
+    return this.getAccessToken().length > 0;
+  }
+
   getUserInfo() {
+    const token = this.getAccessToken();
     return this.http.get<UserResponse>('http://127.0.0.1:8000/user/my_profile', {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+        Authorization: `Bearer ${token}`,
       },
     });
   }
 }
+

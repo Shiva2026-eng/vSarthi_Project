@@ -15,20 +15,30 @@ export class Dashboard implements OnInit {
   id = signal<string>('');
   created_at = signal<string>('');
   ngOnInit(): void {
+    if (!this.authService.isLoggedIn()) {
+      this.onLogOut();
+      return;
+    }
+
     this.authService.getUserInfo().subscribe({
       next: (response) => {
-        this.name.set(response.details.name);
-        this.email.set(response.details.email);
-        this.id.set(response.details.id);
-        this.created_at.set(response.details.created_at);
+        if (response && response.details) {
+          this.name.set(response.details.name || '');
+          this.email.set(response.details.email || '');
+          this.id.set(response.details.id || '');
+          this.created_at.set(response.details.created_at || '');
+        }
       },
       error: (e) => {
-        console.log(e);
+        console.error('Failed to load user profile:', e);
+        this.onLogOut();
       },
     });
   }
+
   onLogOut() {
     this.authService.removeAccessToken();
     this.router.navigate(['/']);
   }
 }
+

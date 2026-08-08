@@ -5,5 +5,11 @@ import { inject } from '@angular/core';
 export const authGuard: CanActivateFn = (route, state) => {
   const auth_service = inject(AuthService);
   const router = inject(Router);
-  return auth_service.getAccessToken() ? true : router.createUrlTree(['/']);
+
+  if (!auth_service.isLoggedIn()) {
+    auth_service.removeAccessToken();
+    return router.createUrlTree(['/']);
+  }
+  return true;
 };
+

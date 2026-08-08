@@ -13,34 +13,49 @@ import { NotificationBanner } from '../notification-banner/notification-banner';
 })
 export class LoginComponent {
   private http = inject(AuthService);
+  private router = inject(Router);
+
   showBanner = signal<boolean>(false);
   bannerMessage = signal<string>('');
   messageType = signal<'error' | 'success'>('error');
-  private router = inject(Router);
+  isLoading = signal<boolean>(false);
+
   loginForm = new FormGroup({
     email: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required, Validators.email],
     }),
-    password: new FormControl(),
+    password: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
   });
+
   loginUser() {
+    if (this.loginForm.invalid) return;
+
+    this.isLoading.set(true);
     const body = new HttpParams()
       .set('username', this.loginForm.value.email ?? '')
-      .set('password', this.loginForm.value.password);
+      .set('password', this.loginForm.value.password ?? '');
+
     this.http.login(body).subscribe({
       next: (response) => {
+        this.isLoading.set(false);
         this.http.setAccessToken(response.access_token);
         this.router.navigate(['/dashboard']);
       },
       error: (e) => {
-        console.error(e.error.detail);
+        this.isLoading.set(false);
+        console.error(e?.error?.detail);
         this.showBanner.set(true);
-        this.bannerMessage.set(e.error.detail);
+        this.messageType.set('error');
+        this.bannerMessage.set(e?.error?.detail || 'Invalid email or password');
         setTimeout(() => {
           this.showBanner.set(false);
-        }, 2000);
+        }, 3000);
       },
     });
   }
 }
+

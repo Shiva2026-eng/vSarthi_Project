@@ -10,7 +10,7 @@ from models.ProcessedDocuments import ProcessedDocument
 from services.extractor import extract_text
 from services.llm import process_document
 from utilities.current_user import get_current_user
-
+from models.ProcessedDocuments import ProcessedDocument
 router = APIRouter(
     prefix="/documents",
     tags=["Documents"],
@@ -172,3 +172,12 @@ def get_all_documents_for_a_user(
         "message": "Documents fetched successfully.",
         "data": documents,
     }
+@router.get("/document/{document_id}")
+def get_document_by_id(document_id:UUID,db:db_dependency,user:user_dependency):
+    document=db.query(ProcessedDocument).join(Document).filter(
+        ProcessedDocument.document_id==document_id,
+        Document.user_id==user["id"]
+    ).first()
+    if document is None:
+        raise HTTPException(status_code=404,detail='No document found')
+    return document

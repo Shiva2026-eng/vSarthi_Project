@@ -46,7 +46,7 @@
                   </td>
                   <td>
                     @if (doc.processing_status === 'completed') {
-                      <button class="action-btn summary-btn">
+                      <button class="action-btn summary-btn" (click)="viewSummary(doc.id)">
                         <p>View Summary</p>
                       </button>
                     } @else if (isProcessing(doc)) {
@@ -73,3 +73,4 @@
   (toggleModal)="toggleModal()"
   (fileUploaded)="onFileUploaded()"
 ></app-file-upload-modal>
+

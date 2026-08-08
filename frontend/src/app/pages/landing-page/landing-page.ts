@@ -5,6 +5,7 @@ import { AuthService } from '../../services/auth-service';
 import { HttpClient } from '@angular/common/http';
 import { FileUploadModal } from '../../components/LandingPage/file-upload-modal/file-upload-modal';
 import { DocumentsService } from '../../services/documents-service';
+import { Router } from '@angular/router';
 
 interface Response {
   data: Document[];
@@ -34,6 +35,7 @@ export class LandingPage implements OnInit {
   private http = inject(HttpClient);
   private auth_service = inject(AuthService);
   private documentsService = inject(DocumentsService);
+  private router = inject(Router);
 
   documents = signal<Document[]>([]);
   processingDocIds = signal<Set<string>>(new Set());
@@ -44,14 +46,16 @@ export class LandingPage implements OnInit {
   }
 
   ngOnInit(): void {
+    if (!this.auth_service.isLoggedIn()) {
+      this.auth_service.removeAccessToken();
+      this.router.navigate(['/']);
+      return;
+    }
     this.fetchDocuments();
   }
 
   isProcessing(doc: Document): boolean {
-    return (
-      doc.processing_status === 'processing' ||
-      this.processingDocIds().has(doc.id)
-    );
+    return doc.processing_status === 'processing' || this.processingDocIds().has(doc.id);
   }
 
   sendForProcessing(document_id: string) {
@@ -60,9 +64,7 @@ export class LandingPage implements OnInit {
     this.processingDocIds.set(currentSet);
 
     this.documents.update((docs) =>
-      docs.map((d) =>
-        d.id === document_id ? { ...d, processing_status: 'processing' } : d
-      )
+      docs.map((d) => (d.id === document_id ? { ...d, processing_status: 'processing' } : d)),
     );
 
     this.documentsService.processDocument(document_id).subscribe({
@@ -78,26 +80,42 @@ export class LandingPage implements OnInit {
         const updatedSet = new Set(this.processingDocIds());
         updatedSet.delete(document_id);
         this.processingDocIds.set(updatedSet);
-        alert('Failed to process document. Please try again.');
-        this.fetchDocuments();
+        if (e?.status === 401 || e?.status === 403) {
+          this.auth_service.removeAccessToken();
+          this.router.navigate(['/']);
+        } else {
+          alert('Failed to process document. Please try again.');
+          this.fetchDocuments();
+        }
       },
     });
   }
 
   fetchDocuments(): void {
+    const token = this.auth_service.getAccessToken();
+    if (!token) {
+      this.auth_service.removeAccessToken();
+      this.router.navigate(['/']);
+      return;
+    }
+
     this.http
       .get<Response>('http://127.0.0.1:8000/documents/get_all_documents', {
         headers: {
-          Authorization: `Bearer ${this.auth_service.getAccessToken()}`,
+          Authorization: `Bearer ${token}`,
         },
       })
       .subscribe({
         next: (response) => {
           console.log('Fetched documents:', response);
-          this.documents.set(response.data);
+          this.documents.set(response.data || []);
         },
         error: (e) => {
           console.error('Error fetching documents:', e);
+          if (e?.status === 401 || e?.status === 403) {
+            this.auth_service.removeAccessToken();
+            this.router.navigate(['/']);
+          }
         },
       });
   }
@@ -108,6 +126,22 @@ export class LandingPage implements OnInit {
 
   getSizeInKB(bytes: number): string {
     return (bytes / 1024).toFixed(2);
+  }
+
+  viewSummary(documentId: string) {
+    this.documentsService.fetchProcessedDocument(documentId).subscribe({
+      next: (response) => {
+        console.log('Fetched summary:', response);
+        this.router.navigate(['/summary']);
+      },
+      error: (e) => {
+        console.error('Error fetching summary:', e);
+        if (e?.status === 401 || e?.status === 403) {
+          this.auth_service.removeAccessToken();
+          this.router.navigate(['/']);
+        }
+      },
+    });
   }
 }
 
