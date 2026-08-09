@@ -157,6 +157,7 @@ def get_all_documents_for_a_user(
     documents = (
         db.query(Document)
         .filter(Document.user_id == user["id"])
+        .order_by(Document.created_at.desc())
         .all()
     )
 

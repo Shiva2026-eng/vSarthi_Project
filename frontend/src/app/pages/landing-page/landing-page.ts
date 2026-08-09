@@ -1,34 +1,32 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { Dashboard } from '../../components/LandingPage/dashboard/dashboard';
-import { AuthService } from '../../services/auth-service';
 import { HttpClient } from '@angular/common/http';
-import { FileUploadModal } from '../../components/LandingPage/file-upload-modal/file-upload-modal';
-import { DocumentsService } from '../../services/documents-service';
 import { Router } from '@angular/router';
-import { ConnectedAccounts } from '../../services/auth-service';
-import { DatePipe } from '@angular/common';
+import { Dashboard } from '../../components/LandingPage/dashboard/dashboard';
+import { FileUploadModal } from '../../components/LandingPage/file-upload-modal/file-upload-modal';
+import { ConnectedServices } from '../../components/LandingPage/connected-services/connected-services';
+import {
+  DocumentsTableComponent,
+  Document,
+} from '../../components/LandingPage/documents-table/documents-table';
+import { OutlookDrawerModal } from '../../components/LandingPage/outlook-drawer-modal/outlook-drawer-modal';
+import { AuthService, ConnectedAccounts } from '../../services/auth-service';
+import { DocumentsService } from '../../services/documents-service';
 
-interface Response {
+interface DocumentsResponse {
   data: Document[];
   success: boolean;
   message: string;
 }
 
-interface Document {
-  created_at: string;
-  extension: string;
-  filename: string;
-  id: string;
-  mime_type: string;
-  size: number;
-  source: string;
-  user_id: string;
-  processing_status: string;
-}
-
 @Component({
   selector: 'app-landing-page',
-  imports: [Dashboard, FileUploadModal, DatePipe],
+  imports: [
+    Dashboard,
+    FileUploadModal,
+    ConnectedServices,
+    DocumentsTableComponent,
+    OutlookDrawerModal,
+  ],
   templateUrl: './landing-page.html',
   styleUrl: './landing-page.scss',
 })
@@ -41,6 +39,7 @@ export class LandingPage implements OnInit {
   documents = signal<Document[]>([]);
   processingDocIds = signal<Set<string>>(new Set());
   showModal: boolean = false;
+
   name = signal<string>('');
   email = signal<string>('');
   id = signal<string>('');
@@ -49,6 +48,13 @@ export class LandingPage implements OnInit {
     outlook: false,
     telegram: false,
   });
+
+  showOutlookDrawer: boolean = false;
+  outlookMessages = signal<any[]>([]);
+  loadingOutlookMessages = signal<boolean>(false);
+  ingestingMessageId: string | null = null;
+  ingestingAllEmails: boolean = false;
+
   toggleModal() {
     this.showModal = !this.showModal;
   }
@@ -67,6 +73,7 @@ export class LandingPage implements OnInit {
         this.created_at.set(user_info.details.created_at);
         this.id.set(user_info.details.id);
         this.email.set(user_info.details.email);
+
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('outlook_status') === 'success') {
           this.fetchOutlookEmails();
@@ -78,8 +85,25 @@ export class LandingPage implements OnInit {
     });
   }
 
-  isProcessing(doc: Document): boolean {
-    return doc.processing_status === 'processing' || this.processingDocIds().has(doc.id);
+  fetchDocuments(): void {
+    this.http
+      .get<DocumentsResponse>('http://127.0.0.1:8000/documents/get_all_documents')
+      .subscribe({
+        next: (response) => {
+          const docs = response.data || [];
+          docs.sort(
+            (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+          );
+          this.documents.set(docs);
+        },
+        error: (e) => {
+          console.error('Error fetching documents:', e);
+          if (e?.status === 401 || e?.status === 403) {
+            this.auth_service.removeAccessToken();
+            this.router.navigate(['/']);
+          }
+        },
+      });
   }
 
   sendForProcessing(document_id: string) {
@@ -92,8 +116,7 @@ export class LandingPage implements OnInit {
     );
 
     this.documentsService.processDocument(document_id).subscribe({
-      next: (response) => {
-        console.log('Document processed successfully:', response);
+      next: () => {
         const updatedSet = new Set(this.processingDocIds());
         updatedSet.delete(document_id);
         this.processingDocIds.set(updatedSet);
@@ -115,28 +138,6 @@ export class LandingPage implements OnInit {
     });
   }
 
-  fetchDocuments(): void {
-    this.http.get<Response>('http://127.0.0.1:8000/documents/get_all_documents').subscribe({
-      next: (response) => {
-        console.log('Fetched documents:', response);
-        this.documents.set(response.data || []);
-      },
-      error: (e) => {
-        console.error('Error fetching documents:', e);
-        if (e?.status === 401 || e?.status === 403) {
-          this.auth_service.removeAccessToken();
-          this.router.navigate(['/']);
-        }
-      },
-    });
-  }
-
-  showOutlookDrawer: boolean = false;
-  outlookMessages = signal<any[]>([]);
-  loadingOutlookMessages = signal<boolean>(false);
-  ingestingMessageId: string | null = null;
-  ingestingAllEmails: boolean = false;
-
   connectOutlook() {
     this.auth_service.getOutlookLoginUrl().subscribe({
       next: (res) => {
@@ -155,10 +156,8 @@ export class LandingPage implements OnInit {
     this.loadingOutlookMessages.set(true);
     this.auth_service.getOutlookMessages().subscribe({
       next: (res) => {
-        console.log('fetching response...');
         this.loadingOutlookMessages.set(false);
         this.outlookMessages.set(res.messages || []);
-        console.log('Response fetched...');
         this.showOutlookDrawer = true;
       },
       error: (err) => {
@@ -210,14 +209,9 @@ export class LandingPage implements OnInit {
     this.fetchDocuments();
   }
 
-  getSizeInKB(bytes: number): string {
-    return (bytes / 1024).toFixed(2);
-  }
-
   viewSummary(documentId: string) {
     this.documentsService.fetchProcessedDocument(documentId).subscribe({
-      next: (response) => {
-        console.log('Fetched summary:', response);
+      next: () => {
         this.router.navigate(['/summary']);
       },
       error: (e) => {

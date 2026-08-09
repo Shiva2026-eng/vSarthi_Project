@@ -64,12 +64,12 @@ def connect_outlook_account(user: user_dependency):
         redirect_uri=REDIRECT_URI,
         state=user_id
     )
-    return RedirectResponse(auth_url)
+    # return RedirectResponse(auth_url)
     #returning only for testing purposes
-    # return {
-    #     "success": True,
-    #     "auth_url": auth_url
-    # }
+    return {
+        "success": True,
+        "auth_url": auth_url
+    }
 @router.get("/outlook/callback")
 def callback(code: str, state: str, db: db_dependency):
     msal_app = get_msal_app()

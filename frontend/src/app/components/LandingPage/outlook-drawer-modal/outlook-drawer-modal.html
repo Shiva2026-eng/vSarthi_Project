@@ -1,0 +1,67 @@
+@if (showDrawer) {
+  <div class="modal-overlay" (click)="onClose()">
+    <div class="drawer-content" (click)="$event.stopPropagation()">
+      <div class="drawer-header">
+        <div class="header-title">
+          <svg viewBox="0 0 24 24" fill="currentColor" class="outlook-icon">
+            <path
+              d="M21.5 3h-19C1.67 3 1 3.67 1 4.5v15c0 .83.67 1.5 1.5 1.5h19c.83 0 1.5-.67 1.5-1.5v-15c0-.83-.67-1.5-1.5-1.5zm-1 2v2.15l-8 4.99-8-4.99V5h16zm-16 14V9.35l7.47 4.66a.996.996 0 001.06 0L20.5 9.35V19h-16z"
+            />
+          </svg>
+          <div>
+            <h3>Outlook Emails</h3>
+            <p>Select an email to import, or import all emails at once</p>
+          </div>
+        </div>
+        <button class="close-btn" (click)="onClose()">✕</button>
+      </div>
+
+      <div class="drawer-body">
+        @if (outlookMessages.length === 0) {
+          <div class="empty-state">
+            <p>No recent emails found in your Outlook inbox.</p>
+          </div>
+        } @else {
+          <div class="bulk-import-bar">
+            <span>Fetched {{ outlookMessages.length }} emails</span>
+            <button class="import-all-btn" [disabled]="ingestingAllEmails" (click)="onImportAll()">
+              @if (ingestingAllEmails) {
+                Importing All...
+              } @else {
+                Import All Emails at Once
+              }
+            </button>
+          </div>
+          <div class="email-list">
+            @for (msg of outlookMessages; track msg.id) {
+              <div class="email-card">
+                <div class="email-header">
+                  <span class="sender">{{
+                    msg.sender?.emailAddress?.name || msg.sender?.emailAddress?.address
+                  }}</span>
+                  <span class="date">{{ msg.receivedDateTime | date: 'short' }}</span>
+                </div>
+                <h4 class="subject">{{ msg.subject || '(No Subject)' }}</h4>
+                <p class="snippet">{{ msg.bodyPreview }}</p>
+
+                <div class="email-actions">
+                  <button
+                    class="import-btn"
+                    [disabled]="ingestingMessageId === msg.id"
+                    (click)="onImportEmail(msg)"
+                  >
+                    @if (ingestingMessageId === msg.id) {
+                      Importing...
+                    } @else {
+                      Import Email Body as Document
+                    }
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}

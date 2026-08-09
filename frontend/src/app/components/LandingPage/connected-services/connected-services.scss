@@ -1,0 +1,176 @@
+.services-section {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+
+  .section-header {
+    margin-bottom: 1.25rem;
+
+    h2 {
+      margin: 0 0 0.25rem 0;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #111827;
+      letter-spacing: -0.01em;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.875rem;
+      color: #6b7280;
+    }
+  }
+
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.25rem;
+  }
+}
+
+.service-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.06), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+    border-color: #d1d5db;
+  }
+
+  &.connected {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+
+    &:hover {
+      border-color: #86efac;
+    }
+  }
+
+  .service-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+
+    svg {
+      width: 26px;
+      height: 26px;
+    }
+  }
+
+  &.outlook {
+    .service-icon {
+      background: #eff6ff;
+      color: #0078d4;
+    }
+  }
+
+  &.telegram {
+    .service-icon {
+      background: #f0f9ff;
+      color: #0088cc;
+    }
+  }
+
+  .service-details {
+    flex: 1;
+    min-width: 0;
+
+    .service-title-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.25rem;
+
+      h3 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 650;
+        color: #1f2937;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.8rem;
+      color: #6b7280;
+      line-height: 1.35;
+    }
+  }
+
+  .connection-status {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 9999px;
+    background: #f3f4f6;
+    color: #6b7280;
+    white-space: nowrap;
+
+    &.active {
+      background: #dcfce7;
+      color: #15803d;
+    }
+  }
+
+  .service-actions {
+    flex-shrink: 0;
+
+    h4 {
+      margin: 0;
+      font-size: 0.85rem;
+      color: #9ca3af;
+      font-weight: 500;
+    }
+
+    .btn {
+      padding: 0.55rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+
+      &.btn-primary {
+        &.outlook-btn {
+          background: #0078d4;
+          color: #ffffff;
+          &:hover {
+            background: #005a9e;
+            box-shadow: 0 4px 12px rgba(0, 120, 212, 0.25);
+          }
+        }
+      }
+
+      &.btn-secondary {
+        background: #ffffff;
+        color: #374151;
+        border: 1px solid #d1d5db;
+        &:hover {
+          background: #f3f4f6;
+          border-color: #9ca3af;
+          color: #111827;
+        }
+      }
+    }
+  }
+}
