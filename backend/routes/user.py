@@ -64,12 +64,12 @@ def connect_outlook_account(user: user_dependency):
         redirect_uri=REDIRECT_URI,
         state=user_id
     )
-    # return RedirectResponse(auth_url)
+    return RedirectResponse(auth_url)
     #returning only for testing purposes
-    return {
-        "success": True,
-        "auth_url": auth_url
-    }
+    # return {
+    #     "success": True,
+    #     "auth_url": auth_url
+    # }
 @router.get("/outlook/callback")
 def callback(code: str, state: str, db: db_dependency):
     msal_app = get_msal_app()
@@ -121,24 +121,18 @@ def callback(code: str, state: str, db: db_dependency):
             accounts_dict["outlook"] = True
             user_db.connected_account = accounts_dict
         db.commit()
-        # For testing backend: redirect directly to test-messages endpoint
-        return RedirectResponse(f"/user/outlook/test-messages?user_id={state}")
+        # Redirect back to Angular frontend dashboard with status query parameter
+        return RedirectResponse("http://localhost:4200/dashboard?outlook_status=success")
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail=result.get("error_description", "Failed to acquire token")
     )
-@router.get("/outlook/test-messages")
-async def test_outlook_messages(user_id: str, db: db_dependency):
+@router.get("/outlook/messages")
+async def get_outlook_messages(user: user_dependency, db: db_dependency):
     """
-    Backend Test Endpoint: Retrieves top 5 emails from Outlook using saved token from UserToken table
+    Retrieves recent emails from Outlook using saved user token from UserToken table
     """
-    try:
-        user_uuid = UUID(user_id)
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid user_id UUID format"
-        )
+    user_uuid = UUID(str(user["id"]))
 
     user_token = (
         db.query(UserToken)
@@ -152,26 +146,192 @@ async def test_outlook_messages(user_id: str, db: db_dependency):
     if not user_token or not user_token.access_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="No Outlook token found for this user_id in database."
+            detail="No Outlook token found. Please connect your Outlook account first."
         )
 
     access_token = user_token.access_token
     headers = {"Authorization": f"Bearer {access_token}"}
-    # Fetch top 5 emails via Microsoft Graph API
     async with httpx.AsyncClient() as client:
         response = await client.get(
-            "https://graph.microsoft.com/v1.0/me/messages?$top=5&$select=subject,sender,receivedDateTime",
+            "https://graph.microsoft.com/v1.0/me/messages?$top=15&$select=id,subject,sender,receivedDateTime,hasAttachments,bodyPreview,body",
             headers=headers
         )
     if response.status_code == 200:
         data = response.json()
         return {
             "success": True,
-            "user_id": user_id,
             "total_fetched": len(data.get("value", [])),
             "messages": data.get("value", [])
         }
     raise HTTPException(
         status_code=response.status_code,
-        detail=response.json()
+        detail="Failed to fetch messages from Microsoft Graph API."
     )
+
+
+from models.Documents import Document
+from enums import SourceEnum
+
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@router.post("/outlook/ingest-email/{message_id}")
+async def ingest_outlook_email(
+    message_id: str,
+    user: user_dependency,
+    db: db_dependency
+):
+    """
+    Fetches the specific email from Outlook Graph API and saves the email body (plus attachments if any)
+    as a Document record ready for RAG processing.
+    """
+    user_uuid = UUID(str(user["id"]))
+
+    user_token = (
+        db.query(UserToken)
+        .filter(
+            UserToken.user_id == user_uuid,
+            UserToken.provider == "outlook"
+        )
+        .first()
+    )
+
+    if not user_token or not user_token.access_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Outlook token not found."
+        )
+
+    access_token = user_token.access_token
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    async with httpx.AsyncClient() as client:
+        res = await client.get(
+            f"https://graph.microsoft.com/v1.0/me/messages/{message_id}",
+            headers=headers
+        )
+
+    if res.status_code != 200:
+        raise HTTPException(status_code=res.status_code, detail="Could not retrieve email message details from Outlook.")
+
+    msg_data = res.json()
+    subject = msg_data.get("subject") or "Untitled Email"
+    body_content = msg_data.get("body", {}).get("content", "") or msg_data.get("bodyPreview", "")
+    
+    # Strip HTML tags if content type is html for clean text extraction
+    import re
+    clean_text = re.sub(r'<[^>]+>', ' ', body_content)
+    clean_text = "\n".join([line.strip() for line in clean_text.splitlines() if line.strip()])
+
+    formatted_content = f"Subject: {subject}\nSender: {msg_data.get('sender', {}).get('emailAddress', {}).get('address', '')}\nDate: {msg_data.get('receivedDateTime', '')}\n\n--- EMAIL BODY ---\n{clean_text}"
+
+    # Create document entry in DB
+    safe_filename = "".join(c if c.isalnum() or c in " ._-" else "_" for c in subject)[:60]
+    filename = f"Outlook - {safe_filename}.txt"
+
+    document = Document(
+        user_id=user_uuid,
+        filename=filename,
+        mime_type="text/plain",
+        extension="txt",
+        size=len(formatted_content.encode("utf-8")),
+        source=SourceEnum.OUTLOOK,
+        processing_status="pending",
+        file_path=""
+    )
+    db.add(document)
+    db.flush()
+
+    filepath = os.path.join(UPLOAD_DIR, f"{document.id}.txt")
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write(formatted_content)
+
+    document.file_path = filepath
+    db.commit()
+    db.refresh(document)
+
+    return {
+        "success": True,
+        "message": f"Email '{subject}' successfully ingested as a document!",
+        "document_id": str(document.id)
+    }
+
+@router.post("/outlook/ingest-all-emails")
+async def ingest_all_outlook_emails(
+    user: user_dependency,
+    db: db_dependency
+):
+    """
+    Fetches recent emails from Outlook Graph API and ingests all of them as documents at once.
+    """
+    user_uuid = UUID(str(user["id"]))
+
+    user_token = (
+        db.query(UserToken)
+        .filter(
+            UserToken.user_id == user_uuid,
+            UserToken.provider == "outlook"
+        )
+        .first()
+    )
+
+    if not user_token or not user_token.access_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Outlook token not found."
+        )
+
+    access_token = user_token.access_token
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    async with httpx.AsyncClient() as client:
+        res = await client.get(
+            "https://graph.microsoft.com/v1.0/me/messages?$top=15&$select=id,subject,sender,receivedDateTime,bodyPreview,body",
+            headers=headers
+        )
+
+    if res.status_code != 200:
+        raise HTTPException(status_code=res.status_code, detail="Could not retrieve emails from Outlook.")
+
+    messages = res.json().get("value", [])
+    ingested_count = 0
+    import re
+
+    for msg_data in messages:
+        subject = msg_data.get("subject") or "Untitled Email"
+        body_content = msg_data.get("body", {}).get("content", "") or msg_data.get("bodyPreview", "")
+        clean_text = re.sub(r'<[^>]+>', ' ', body_content)
+        clean_text = "\n".join([line.strip() for line in clean_text.splitlines() if line.strip()])
+
+        formatted_content = f"Subject: {subject}\nSender: {msg_data.get('sender', {}).get('emailAddress', {}).get('address', '')}\nDate: {msg_data.get('receivedDateTime', '')}\n\n--- EMAIL BODY ---\n{clean_text}"
+
+        safe_filename = "".join(c if c.isalnum() or c in " ._-" else "_" for c in subject)[:60]
+        filename = f"Outlook - {safe_filename}.txt"
+
+        document = Document(
+            user_id=user_uuid,
+            filename=filename,
+            mime_type="text/plain",
+            extension="txt",
+            size=len(formatted_content.encode("utf-8")),
+            source=SourceEnum.OUTLOOK,
+            processing_status="pending",
+            file_path=""
+        )
+        db.add(document)
+        db.flush()
+
+        filepath = os.path.join(UPLOAD_DIR, f"{document.id}.txt")
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(formatted_content)
+
+        document.file_path = filepath
+        ingested_count += 1
+
+    db.commit()
+
+    return {
+        "success": True,
+        "message": f"Successfully ingested {ingested_count} Outlook emails as documents!",
+        "count": ingested_count
+    }

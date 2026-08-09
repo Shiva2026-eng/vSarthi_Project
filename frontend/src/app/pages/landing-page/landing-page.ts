@@ -5,8 +5,9 @@ import { HttpClient } from '@angular/common/http';
 import { FileUploadModal } from '../../components/LandingPage/file-upload-modal/file-upload-modal';
 import { DocumentsService } from '../../services/documents-service';
 import { Router } from '@angular/router';
-import { UserProfileResponse } from '../../services/auth-service';
 import { ConnectedAccounts } from '../../services/auth-service';
+import { DatePipe } from '@angular/common';
+
 interface Response {
   data: Document[];
   success: boolean;
@@ -27,7 +28,7 @@ interface Document {
 
 @Component({
   selector: 'app-landing-page',
-  imports: [Dashboard, FileUploadModal],
+  imports: [Dashboard, FileUploadModal, DatePipe],
   templateUrl: './landing-page.html',
   styleUrl: './landing-page.scss',
 })
@@ -66,6 +67,10 @@ export class LandingPage implements OnInit {
         this.created_at.set(user_info.details.created_at);
         this.id.set(user_info.details.id);
         this.email.set(user_info.details.email);
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('outlook_status') === 'success') {
+          this.fetchOutlookEmails();
+        }
       },
       error: (err) => {
         console.error('Failed to fetch user profile:', err);
@@ -111,21 +116,94 @@ export class LandingPage implements OnInit {
   }
 
   fetchDocuments(): void {
-    this.http
-      .get<Response>('http://127.0.0.1:8000/documents/get_all_documents')
-      .subscribe({
-        next: (response) => {
-          console.log('Fetched documents:', response);
-          this.documents.set(response.data || []);
-        },
-        error: (e) => {
-          console.error('Error fetching documents:', e);
-          if (e?.status === 401 || e?.status === 403) {
-            this.auth_service.removeAccessToken();
-            this.router.navigate(['/']);
-          }
-        },
-      });
+    this.http.get<Response>('http://127.0.0.1:8000/documents/get_all_documents').subscribe({
+      next: (response) => {
+        console.log('Fetched documents:', response);
+        this.documents.set(response.data || []);
+      },
+      error: (e) => {
+        console.error('Error fetching documents:', e);
+        if (e?.status === 401 || e?.status === 403) {
+          this.auth_service.removeAccessToken();
+          this.router.navigate(['/']);
+        }
+      },
+    });
+  }
+
+  showOutlookDrawer: boolean = false;
+  outlookMessages = signal<any[]>([]);
+  loadingOutlookMessages = signal<boolean>(false);
+  ingestingMessageId: string | null = null;
+  ingestingAllEmails: boolean = false;
+
+  connectOutlook() {
+    this.auth_service.getOutlookLoginUrl().subscribe({
+      next: (res) => {
+        if (res.auth_url) {
+          window.location.href = res.auth_url;
+        }
+      },
+      error: (err) => {
+        console.error('Error fetching Outlook login URL:', err);
+        alert('Failed to initiate Outlook connection.');
+      },
+    });
+  }
+
+  fetchOutlookEmails() {
+    this.loadingOutlookMessages.set(true);
+    this.auth_service.getOutlookMessages().subscribe({
+      next: (res) => {
+        console.log('fetching response...');
+        this.loadingOutlookMessages.set(false);
+        this.outlookMessages.set(res.messages || []);
+        console.log('Response fetched...');
+        this.showOutlookDrawer = true;
+      },
+      error: (err) => {
+        this.loadingOutlookMessages.set(false);
+        console.error('Error fetching Outlook messages:', err);
+        alert('Failed to fetch Outlook emails. Make sure your account is connected.');
+      },
+    });
+  }
+
+  closeOutlookDrawer() {
+    this.showOutlookDrawer = false;
+  }
+
+  importEmailBody(msg: any) {
+    this.ingestingMessageId = msg.id;
+    this.auth_service.ingestOutlookEmail(msg.id).subscribe({
+      next: (res) => {
+        this.ingestingMessageId = null;
+        this.fetchDocuments();
+        alert(res.message);
+      },
+      error: (err) => {
+        this.ingestingMessageId = null;
+        console.error('Error importing email body:', err);
+        alert('Failed to import email body as document.');
+      },
+    });
+  }
+
+  importAllEmails() {
+    this.ingestingAllEmails = true;
+    this.auth_service.ingestAllOutlookEmails().subscribe({
+      next: (res) => {
+        this.ingestingAllEmails = false;
+        this.fetchDocuments();
+        this.closeOutlookDrawer();
+        alert(res.message);
+      },
+      error: (err) => {
+        this.ingestingAllEmails = false;
+        console.error('Error importing all emails:', err);
+        alert('Failed to import all emails.');
+      },
+    });
   }
 
   onFileUploaded(): void {

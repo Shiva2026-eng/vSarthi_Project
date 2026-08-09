@@ -57,4 +57,30 @@ export class AuthService {
   getUserInfo() {
     return this.http.get<UserProfileResponse>('http://127.0.0.1:8000/user/my_profile');
   }
+
+  getOutlookLoginUrl() {
+    return this.http.get<{ success: boolean; auth_url: string }>(
+      'http://127.0.0.1:8000/user/connect-account/outlook/login'
+    );
+  }
+
+  getOutlookMessages() {
+    return this.http.get<{ success: boolean; total_fetched: number; messages: any[] }>(
+      'http://127.0.0.1:8000/user/outlook/messages'
+    );
+  }
+
+  ingestOutlookEmail(messageId: string) {
+    return this.http.post<{ success: boolean; message: string; document_id: string }>(
+      `http://127.0.0.1:8000/user/outlook/ingest-email/${messageId}`,
+      {}
+    );
+  }
+
+  ingestAllOutlookEmails() {
+    return this.http.post<{ success: boolean; message: string; count: number }>(
+      'http://127.0.0.1:8000/user/outlook/ingest-all-emails',
+      {}
+    );
+  }
 }
