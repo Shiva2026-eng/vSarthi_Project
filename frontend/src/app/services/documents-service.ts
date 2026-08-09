@@ -13,22 +13,13 @@ export class DocumentsService {
   uploadDocument(file: File) {
     const formdata = new FormData();
     formdata.append('file', file);
-    return this.http.post('http://127.0.0.1:8000/documents/upload', formdata, {
-      headers: {
-        Authorization: `Bearer ${this.authService.getAccessToken()}`,
-      },
-    });
+    return this.http.post('http://127.0.0.1:8000/documents/upload', formdata);
   }
 
   processDocument(documentId: string) {
     return this.http.post(
       `http://127.0.0.1:8000/documents/process_document/${documentId}`,
       {},
-      {
-        headers: {
-          Authorization: `Bearer ${this.authService.getAccessToken()}`,
-        },
-      },
     );
   }
 
@@ -36,11 +27,6 @@ export class DocumentsService {
     return this.http
       .get<ProcessedDocument>(
         `http://127.0.0.1:8000/documents/document/${documentId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${this.authService.getAccessToken()}`,
-          },
-        },
       )
       .pipe(
         tap((data) => {

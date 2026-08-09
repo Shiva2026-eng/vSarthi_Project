@@ -4,14 +4,22 @@ interface TokenResponse {
   access_token: string;
   token_type: string;
 }
-interface UserResponse {
+export interface ConnectedAccounts {
+  telegram: boolean;
+  outlook: boolean;
+}
+
+export interface UserDetails {
+  id: string;
+  name: string;
+  email: string;
+  created_at: string;
+  connected_accounts: ConnectedAccounts;
+}
+
+export interface UserProfileResponse {
   success: boolean;
-  details: {
-    id: string;
-    name: string;
-    email: string;
-    created_at: string;
-  };
+  details: UserDetails;
 }
 
 @Service()
@@ -47,11 +55,6 @@ export class AuthService {
   }
 
   getUserInfo() {
-    const token = this.getAccessToken();
-    return this.http.get<UserResponse>('http://127.0.0.1:8000/user/my_profile', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return this.http.get<UserProfileResponse>('http://127.0.0.1:8000/user/my_profile');
   }
 }

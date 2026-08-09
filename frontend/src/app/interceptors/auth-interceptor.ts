@@ -16,7 +16,16 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     router.navigate(['/']);
   }
 
-  return next(req).pipe(
+  let authReq = req;
+  if (token && !isAuthRoute) {
+    authReq = req.clone({
+      setHeaders: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  }
+
+  return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
       if (error.status === 401 || error.status === 403) {
         console.warn('Authentication token expired or invalid. Redirecting to login.');

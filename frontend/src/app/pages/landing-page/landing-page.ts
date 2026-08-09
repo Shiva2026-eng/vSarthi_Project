@@ -1,12 +1,12 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { Dashboard } from '../../components/LandingPage/dashboard/dashboard';
-import { SectionBanner } from '../../components/LandingPage/section-banner/section-banner';
 import { AuthService } from '../../services/auth-service';
 import { HttpClient } from '@angular/common/http';
 import { FileUploadModal } from '../../components/LandingPage/file-upload-modal/file-upload-modal';
 import { DocumentsService } from '../../services/documents-service';
 import { Router } from '@angular/router';
-
+import { UserProfileResponse } from '../../services/auth-service';
+import { ConnectedAccounts } from '../../services/auth-service';
 interface Response {
   data: Document[];
   success: boolean;
@@ -27,7 +27,7 @@ interface Document {
 
 @Component({
   selector: 'app-landing-page',
-  imports: [Dashboard, SectionBanner, FileUploadModal],
+  imports: [Dashboard, FileUploadModal],
   templateUrl: './landing-page.html',
   styleUrl: './landing-page.scss',
 })
@@ -40,7 +40,14 @@ export class LandingPage implements OnInit {
   documents = signal<Document[]>([]);
   processingDocIds = signal<Set<string>>(new Set());
   showModal: boolean = false;
-
+  name = signal<string>('');
+  email = signal<string>('');
+  id = signal<string>('');
+  created_at = signal<string>('');
+  connected_accounts = signal<ConnectedAccounts>({
+    outlook: false,
+    telegram: false,
+  });
   toggleModal() {
     this.showModal = !this.showModal;
   }
@@ -52,6 +59,18 @@ export class LandingPage implements OnInit {
       return;
     }
     this.fetchDocuments();
+    this.auth_service.getUserInfo().subscribe({
+      next: (user_info) => {
+        this.name.set(user_info.details.name);
+        this.connected_accounts.set(user_info.details.connected_accounts);
+        this.created_at.set(user_info.details.created_at);
+        this.id.set(user_info.details.id);
+        this.email.set(user_info.details.email);
+      },
+      error: (err) => {
+        console.error('Failed to fetch user profile:', err);
+      },
+    });
   }
 
   isProcessing(doc: Document): boolean {
@@ -92,19 +111,8 @@ export class LandingPage implements OnInit {
   }
 
   fetchDocuments(): void {
-    const token = this.auth_service.getAccessToken();
-    if (!token) {
-      this.auth_service.removeAccessToken();
-      this.router.navigate(['/']);
-      return;
-    }
-
     this.http
-      .get<Response>('http://127.0.0.1:8000/documents/get_all_documents', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      .get<Response>('http://127.0.0.1:8000/documents/get_all_documents')
       .subscribe({
         next: (response) => {
           console.log('Fetched documents:', response);
@@ -144,4 +152,3 @@ export class LandingPage implements OnInit {
     });
   }
 }
-
