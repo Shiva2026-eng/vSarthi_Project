@@ -2,7 +2,7 @@ from __future__ import annotations
 from uuid import UUID, uuid4
 from datetime import datetime
 
-from sqlalchemy import String
+from sqlalchemy import String,JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
@@ -48,8 +48,19 @@ class User(Base):
         onupdate=datetime.utcnow,
         nullable=False
     )
-
+    connected_account:Mapped[dict[str,bool]]=mapped_column(
+        JSON,
+        default=lambda:{
+            "telegram":False,
+            "outlook":False
+        }
+    )
     documents: Mapped[list["Document"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+
+    tokens: Mapped[list["UserToken"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan"
     )
