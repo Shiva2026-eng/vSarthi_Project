@@ -1,0 +1,24 @@
+<section class="dashboard-stats">
+  <div class="stat-card">
+    <div class="stat-value">{{ totalDocuments }}</div>
+    <div class="stat-label">Total Documents</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ processingDocuments }}</div>
+    <div class="stat-label">Processing</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ completedDocuments }}</div>
+    <div class="stat-label">Completed</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">
+      @if (isOutlookConnected) {
+        <span class="status-indicator connected"></span> Connected
+      } @else {
+        <span class="status-indicator disconnected"></span> Disconnected
+      }
+    </div>
+    <div class="stat-label">Outlook Status</div>
+  </div>
+</section>

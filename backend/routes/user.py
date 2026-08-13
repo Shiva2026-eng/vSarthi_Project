@@ -225,9 +225,22 @@ async def ingest_outlook_email(
 
     formatted_content = f"Subject: {subject}\nSender: {msg_data.get('sender', {}).get('emailAddress', {}).get('address', '')}\nDate: {msg_data.get('receivedDateTime', '')}\n\n--- EMAIL BODY ---\n{clean_text}"
 
-    # Create document entry in DB
-    safe_filename = "".join(c if c.isalnum() or c in " ._-" else "_" for c in subject)[:60]
-    filename = f"Outlook - {safe_filename}.txt"
+    safe_filename = "".join(c if c.isalnum() or c in " ._-" else "_" for c in subject)[:45]
+    date_str = msg_data.get("receivedDateTime", "")[:19].replace("T", "_").replace(":", "-")
+    filename = f"Outlook - {safe_filename}_{date_str}.txt"
+
+    existing_doc = db.query(Document).filter(
+        Document.user_id == user_uuid,
+        Document.filename == filename,
+        Document.source == SourceEnum.OUTLOOK
+    ).first()
+
+    if existing_doc:
+        return {
+            "success": True,
+            "message": f"Email '{subject}' already ingested.",
+            "document_id": str(existing_doc.id)
+        }
 
     document = Document(
         user_id=user_uuid,
@@ -305,8 +318,18 @@ async def ingest_all_outlook_emails(
 
         formatted_content = f"Subject: {subject}\nSender: {msg_data.get('sender', {}).get('emailAddress', {}).get('address', '')}\nDate: {msg_data.get('receivedDateTime', '')}\n\n--- EMAIL BODY ---\n{clean_text}"
 
-        safe_filename = "".join(c if c.isalnum() or c in " ._-" else "_" for c in subject)[:60]
-        filename = f"Outlook - {safe_filename}.txt"
+        safe_filename = "".join(c if c.isalnum() or c in " ._-" else "_" for c in subject)[:45]
+        date_str = msg_data.get("receivedDateTime", "")[:19].replace("T", "_").replace(":", "-")
+        filename = f"Outlook - {safe_filename}_{date_str}.txt"
+
+        existing_doc = db.query(Document).filter(
+            Document.user_id == user_uuid,
+            Document.filename == filename,
+            Document.source == SourceEnum.OUTLOOK
+        ).first()
+
+        if existing_doc:
+            continue
 
         document = Document(
             user_id=user_uuid,

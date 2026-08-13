@@ -1,0 +1,71 @@
+<section class="documents-section">
+  <div class="section-header">
+    <h2>Your Documents</h2>
+    <button class="btn btn-outline btn-sm" (click)="refreshClicked.emit()">
+      Refresh
+    </button>
+  </div>
+
+  <div class="table-container">
+    @if (isLoadingDocuments) {
+      <div class="loading-state">Loading documents...</div>
+    } @else if (documents.length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon">📂</div>
+        <p>No documents found.</p>
+        <button class="btn btn-primary" (click)="uploadClicked.emit()">Upload your first document</button>
+      </div>
+    } @else {
+      <table mat-table [dataSource]="documents" class="documents-table">
+        
+        <ng-container matColumnDef="filename">
+          <th mat-header-cell *matHeaderCellDef>Filename</th>
+          <td mat-cell *matCellDef="let doc" class="filename-cell">
+            <span class="filename" [title]="doc.filename">{{ doc.filename }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="type">
+          <th mat-header-cell *matHeaderCellDef>Type</th>
+          <td mat-cell *matCellDef="let doc">{{ doc.extension | uppercase }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="source">
+          <th mat-header-cell *matHeaderCellDef>Source</th>
+          <td mat-cell *matCellDef="let doc">
+            <span class="badge" [class]="'source-' + (doc.source || 'unknown').toLowerCase()">
+              {{ doc.source || 'Unknown' }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let doc">
+            <span class="status-badge" [class]="'status-' + doc.processing_status.toLowerCase()">
+              {{ doc.processing_status }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let doc">
+            @if (doc.processing_status === 'completed') {
+              <button class="btn btn-outline btn-sm" (click)="viewResultClicked.emit(doc.id)">View Result</button>
+            } @else if (doc.processing_status === 'processing' || processingDocs[doc.id]) {
+              <button class="btn btn-outline btn-sm" disabled>
+                <mat-spinner diameter="16"></mat-spinner> Processing...
+              </button>
+            } @else {
+              <button class="btn btn-primary btn-sm" (click)="processClicked.emit(doc.id)">Process Document</button>
+            }
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+    }
+  </div>
+</section>

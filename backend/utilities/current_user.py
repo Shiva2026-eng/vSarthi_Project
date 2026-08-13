@@ -17,7 +17,7 @@ def get_current_user(token:Annotated[str,Depends(oauth2_scheme)],db:db_dependenc
             'name': user_in_databse.name,
             'email': user_in_databse.email,
             'created_at': user_in_databse.created_at,
-            'connected_accounts': user_in_databse.connected_account
+            'connected_account': user_in_databse.connected_account
         }
     except JWTError:
         raise HTTPException(status_code=401,detail='Invalid or expired token')

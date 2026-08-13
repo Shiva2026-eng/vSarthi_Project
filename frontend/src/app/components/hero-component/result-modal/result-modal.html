@@ -1,0 +1,56 @@
+@if (isOpen) {
+  <div class="modal-backdrop">
+    <div class="modal-card result-modal">
+      <div class="modal-header">
+        <h2>Processed Document Result</h2>
+        <button class="close-btn" (click)="closeModal.emit()">×</button>
+      </div>
+      <div class="modal-body result-body">
+        @if (isLoadingResult) {
+          <div class="loading-state">
+            <mat-spinner diameter="32"></mat-spinner>
+            <p>Loading result...</p>
+          </div>
+        } @else if (selectedResult) {
+          <div class="result-content">
+            <div class="result-section">
+              <h3 class="section-title">Document Type</h3>
+              <div class="section-card">
+                <span class="doc-type-chip">{{ selectedResult?.document_type }}</span>
+              </div>
+            </div>
+            
+            <div class="result-section">
+              <h3 class="section-title">Summary</h3>
+              <div class="section-card text-content">
+                {{ selectedResult?.summary }}
+              </div>
+            </div>
+
+            <div class="result-section">
+              <h3 class="section-title">Structured Data</h3>
+              <div class="section-card structured-data-container">
+                @for (item of selectedResult?.structured_data | keyvalue; track item.key) {
+                  @if (item.key !== 'summary' && item.key !== 'document_type') {
+                    <div class="data-item">
+                      <div class="data-label">{{ item.key }}</div>
+                      <div class="data-value">
+                        <!-- Simple check for string/number vs object representation -->
+                        <pre class="json-value">{{ item.value | json }}</pre>
+                      </div>
+                    </div>
+                  }
+                }
+              </div>
+            </div>
+          </div>
+        } @else {
+          <div class="error-state">Failed to load result.</div>
+        }
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="closeModal.emit()">Close</button>
+      </div>
+    </div>
+  </div>
+}

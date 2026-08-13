@@ -1,4 +1,53 @@
-<div class="main-container">
-  <app-side-bar></app-side-bar>
-  <div class="main-content"></div>
+<div class="dashboard-container">
+  <app-sidebar 
+    [userProfile]="userProfile()"
+    [isFetchingEmails]="isFetchingEmails()"
+    [isLoadingProfile]="isLoadingProfile()"
+    (uploadClicked)="openUploadModal()"
+    (connectOutlookClicked)="connectOutlook()"
+    (fetchEmailsClicked)="fetchOutlookEmails()"
+    (logoutClicked)="logout()">
+  </app-sidebar>
+
+  <main class="main-content">
+    @if (errorMessage()) {
+      <div class="alert alert-error">
+        {{ errorMessage() }}
+        <button class="close-btn" (click)="errorMessage.set(null)">×</button>
+      </div>
+    }
+
+    <app-dashboard-stats
+      [totalDocuments]="totalDocuments()"
+      [processingDocuments]="processingDocuments()"
+      [completedDocuments]="completedDocuments()"
+      [isOutlookConnected]="userProfile()?.connected_account?.outlook || false">
+    </app-dashboard-stats>
+
+    <app-documents-table
+      [documents]="documents()"
+      [processingDocs]="processingDocs()"
+      [isLoadingDocuments]="isLoadingDocuments()"
+      (refreshClicked)="fetchDocuments()"
+      (uploadClicked)="openUploadModal()"
+      (processClicked)="processDocument($event)"
+      (viewResultClicked)="viewResult($event)">
+    </app-documents-table>
+  </main>
 </div>
+
+<app-upload-modal
+  [isOpen]="isUploadModalOpen()"
+  [selectedFile]="selectedFile()"
+  [isUploading]="isUploading()"
+  (closeModal)="closeUploadModal()"
+  (fileSelected)="onFileSelected($event)"
+  (uploadClicked)="uploadDocument()">
+</app-upload-modal>
+
+<app-result-modal
+  [isOpen]="isResultModalOpen()"
+  [selectedResult]="selectedResult()"
+  [isLoadingResult]="isLoadingResult()"
+  (closeModal)="closeResultModal()">
+</app-result-modal>
