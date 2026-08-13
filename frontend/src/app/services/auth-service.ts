@@ -18,4 +18,13 @@ export class AuthService {
       },
     });
   }
+  setAccessToken(token: string) {
+    localStorage.setItem('access_token', token);
+  }
+  removeAccessToken() {
+    localStorage.removeItem('access_token');
+  }
+  isLoggedIn() {
+    return localStorage.getItem('access_token') != null;
+  }
 }

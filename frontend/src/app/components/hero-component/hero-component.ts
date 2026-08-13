@@ -1,8 +1,9 @@
 import { Component } from '@angular/core';
+import { SideBar } from '../side-bar/side-bar';
 
 @Component({
   selector: 'app-hero-component',
-  imports: [],
+  imports: [SideBar],
   templateUrl: './hero-component.html',
   styleUrl: './hero-component.scss',
 })

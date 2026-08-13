@@ -1,4 +1,11 @@
 <div class="login-container">
+  @if (showBanner()) {
+    <div class="notification-banner" [class]="this.bannerType() == 'error' ? 'error' : 'success'">
+      <p>
+        {{ bannerMessage() }}
+      </p>
+    </div>
+  }
   <div class="login-card">
     <h1>Login</h1>
     <p class="subtitle">Login to get Started</p>
@@ -9,6 +16,9 @@
         @if (this.loginForm.controls.email.hasError('required')) {
           <mat-error>Email is required</mat-error>
         }
+        @if (this.loginForm.controls.email.hasError('error')) {
+          <mat-error>Enter a valid email address</mat-error>
+        }
       </mat-form-field>
       <mat-form-field appearance="outline">
         <mat-label> Password </mat-label>
@@ -17,7 +27,7 @@
           <mat-error>Password is required</mat-error>
         }
       </mat-form-field>
-      <button mat-raised-button type="button" class="login-button">Login</button>
+      <button mat-raised-button class="login-button" type="submit">Login</button>
       <div class="signup-link">
         <span>Don't have an account?</span>
         <button mat-button type="button" routerLink="/signup">Signup</button>

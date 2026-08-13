@@ -1,4 +1,11 @@
 <div class="signup-container">
+  @if (showBanner()) {
+    <div class="notification-banner" [class]="bannerType() == 'error' ? 'error' : 'success'">
+      <p>
+        {{ bannerMessage()  }}
+      </p>
+    </div>
+  }
   <div class="signup-card">
     <h1>Create Account</h1>
     <p class="subtitle">Signup to get Started</p>

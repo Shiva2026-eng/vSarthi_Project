@@ -75,3 +75,22 @@ mat-form-field {
   font-size: 14px;
   font-weight: 500;
 }
+.notification-banner {
+  font-family:
+    'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana,
+    sans-serif;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 1rem;
+}
+.error {
+  background-color: red;
+  color: white;
+}
+.success {
+  background-color: greenyellow;
+}

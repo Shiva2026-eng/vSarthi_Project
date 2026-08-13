@@ -7,6 +7,8 @@
   background: #f5f7fb;
   padding: 24px;
   box-sizing: border-box;
+  flex-direction: column;
+  position: relative;
 }
 
 .signup-card {
@@ -74,4 +76,23 @@ mat-form-field {
   padding: 0 6px;
   font-size: 14px;
   font-weight: 500;
+}
+.notification-banner {
+  font-family:
+    'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana,
+    sans-serif;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 1rem;
+}
+.error {
+  background-color: red;
+  color: white;
+}
+.success {
+  background-color: greenyellow;
 }
