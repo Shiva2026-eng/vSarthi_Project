@@ -154,12 +154,40 @@ def get_all_documents_for_a_user(
     user: user_dependency,
     db: db_dependency,
 ):
+    from sqlalchemy.orm import selectinload
     documents = (
         db.query(Document)
-        .filter(Document.user_id == user["id"])
+        .options(selectinload(Document.attachments))
+        .filter(Document.user_id == user["id"], Document.parent_id == None)
         .order_by(Document.created_at.desc())
         .all()
     )
+
+    data_out = []
+    for doc in documents:
+        doc_dict = {
+            "id": str(doc.id),
+            "filename": doc.filename,
+            "extension": doc.extension,
+            "mime_type": doc.mime_type,
+            "size": doc.size,
+            "source": doc.source.value if hasattr(doc.source, 'value') else doc.source,
+            "processing_status": doc.processing_status,
+            "created_at": doc.created_at.isoformat(),
+            "attachments": [
+                {
+                    "id": str(att.id),
+                    "filename": att.filename,
+                    "extension": att.extension,
+                    "mime_type": att.mime_type,
+                    "size": att.size,
+                    "source": att.source.value if hasattr(att.source, 'value') else att.source,
+                    "processing_status": att.processing_status,
+                    "created_at": att.created_at.isoformat(),
+                } for att in doc.attachments
+            ]
+        }
+        data_out.append(doc_dict)
 
     if not documents:
         return {
@@ -171,7 +199,7 @@ def get_all_documents_for_a_user(
     return {
         "success": True,
         "message": "Documents fetched successfully.",
-        "data": documents,
+        "data": data_out,
     }
 @router.get("/document/{document_id}")
 def get_document_by_id(document_id:UUID,db:db_dependency,user:user_dependency):

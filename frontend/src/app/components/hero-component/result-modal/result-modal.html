@@ -27,6 +27,26 @@
               </div>
             </div>
 
+            @if (selectedResult?.structured_data?.call_to_action) {
+              <div class="result-section">
+                <h3 class="section-title">Call to Action</h3>
+                <div class="section-card text-content">
+                  {{ selectedResult?.structured_data?.call_to_action }}
+                </div>
+              </div>
+            }
+
+            @if (selectedResult?.structured_data?.priority) {
+              <div class="result-section">
+                <h3 class="section-title">Priority</h3>
+                <div class="section-card">
+                  <span class="priority-chip" [class]="'priority-' + selectedResult?.structured_data?.priority?.toLowerCase()">
+                    {{ selectedResult?.structured_data?.priority }}
+                  </span>
+                </div>
+              </div>
+            }
+
             <div class="result-section">
               <h3 class="section-title">Structured Data</h3>
               <div class="section-card structured-data-container">

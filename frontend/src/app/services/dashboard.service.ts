@@ -11,6 +11,7 @@ export interface DocumentInfo {
   source: string;
   processing_status: string;
   created_at: string;
+  attachments?: DocumentInfo[];
 }
 
 export interface UserProfile {
@@ -31,6 +32,8 @@ export interface ProcessedDocumentResult {
   extracted_text: string;
   structured_data: any;
   processed_at: string;
+  call_to_action?: string;
+  priority?: string;
 }
 
 export interface DashboardInfo {

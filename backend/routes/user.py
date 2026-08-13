@@ -263,6 +263,42 @@ async def ingest_outlook_email(
     db.commit()
     db.refresh(document)
 
+    import base64
+    if msg_data.get("hasAttachments"):
+        async with httpx.AsyncClient() as client:
+            att_res = await client.get(
+                f"https://graph.microsoft.com/v1.0/me/messages/{message_id}/attachments",
+                headers=headers
+            )
+        if att_res.status_code == 200:
+            attachments = att_res.json().get("value", [])
+            for att in attachments:
+                if att.get("@odata.type") == "#microsoft.graph.fileAttachment":
+                    att_name = att.get("name") or "attachment"
+                    att_ext = os.path.splitext(att_name)[1].lstrip(".")
+                    att_mime = att.get("contentType") or "application/octet-stream"
+                    att_bytes = base64.b64decode(att.get("contentBytes", ""))
+                    
+                    att_doc = Document(
+                        user_id=user_uuid,
+                        filename=att_name,
+                        mime_type=att_mime,
+                        extension=att_ext,
+                        size=len(att_bytes),
+                        source=SourceEnum.OUTLOOK,
+                        processing_status="pending",
+                        file_path="",
+                        parent_id=document.id
+                    )
+                    db.add(att_doc)
+                    db.flush()
+                    
+                    att_filepath = os.path.join(UPLOAD_DIR, f"{att_doc.id}.{att_ext}")
+                    with open(att_filepath, "wb") as f:
+                        f.write(att_bytes)
+                    att_doc.file_path = att_filepath
+            db.commit()
+
     return {
         "success": True,
         "message": f"Email '{subject}' successfully ingested as a document!",
@@ -299,7 +335,7 @@ async def ingest_all_outlook_emails(
 
     async with httpx.AsyncClient() as client:
         res = await client.get(
-            "https://graph.microsoft.com/v1.0/me/messages?$top=15&$select=id,subject,sender,receivedDateTime,bodyPreview,body",
+            "https://graph.microsoft.com/v1.0/me/messages?$top=15&$select=id,subject,sender,receivedDateTime,hasAttachments,bodyPreview,body",
             headers=headers
         )
 
@@ -350,8 +386,44 @@ async def ingest_all_outlook_emails(
 
         document.file_path = filepath
         ingested_count += 1
+        db.commit()
+        db.refresh(document)
 
-    db.commit()
+        import base64
+        if msg_data.get("hasAttachments"):
+            async with httpx.AsyncClient() as client:
+                att_res = await client.get(
+                    f"https://graph.microsoft.com/v1.0/me/messages/{msg_data.get('id')}/attachments",
+                    headers=headers
+                )
+            if att_res.status_code == 200:
+                attachments = att_res.json().get("value", [])
+                for att in attachments:
+                    if att.get("@odata.type") == "#microsoft.graph.fileAttachment":
+                        att_name = att.get("name") or "attachment"
+                        att_ext = os.path.splitext(att_name)[1].lstrip(".")
+                        att_mime = att.get("contentType") or "application/octet-stream"
+                        att_bytes = base64.b64decode(att.get("contentBytes", ""))
+                        
+                        att_doc = Document(
+                            user_id=user_uuid,
+                            filename=att_name,
+                            mime_type=att_mime,
+                            extension=att_ext,
+                            size=len(att_bytes),
+                            source=SourceEnum.OUTLOOK,
+                            processing_status="pending",
+                            file_path="",
+                            parent_id=document.id
+                        )
+                        db.add(att_doc)
+                        db.flush()
+                        
+                        att_filepath = os.path.join(UPLOAD_DIR, f"{att_doc.id}.{att_ext}")
+                        with open(att_filepath, "wb") as f:
+                            f.write(att_bytes)
+                        att_doc.file_path = att_filepath
+                db.commit()
 
     return {
         "success": True,

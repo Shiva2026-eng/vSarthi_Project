@@ -16,11 +16,14 @@
         <button class="btn btn-primary" (click)="uploadClicked.emit()">Upload your first document</button>
       </div>
     } @else {
-      <table mat-table [dataSource]="documents" class="documents-table">
+      <table mat-table [dataSource]="flattenedDocuments" class="documents-table">
         
         <ng-container matColumnDef="filename">
           <th mat-header-cell *matHeaderCellDef>Filename</th>
-          <td mat-cell *matCellDef="let doc" class="filename-cell">
+          <td mat-cell *matCellDef="let doc" class="filename-cell" [class.is-attachment]="doc.isAttachment">
+            @if (doc.isAttachment) {
+              <span class="attachment-indent">↳</span>
+            }
             <span class="filename" [title]="doc.filename">{{ doc.filename }}</span>
           </td>
         </ng-container>

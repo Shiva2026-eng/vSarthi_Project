@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID, uuid4
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import String, Integer, Enum, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -57,6 +58,23 @@ class Document(Base):
 
     user: Mapped["User"] = relationship(
         back_populates="documents"
+    )
+
+    parent_id: Mapped[Optional[UUID]] = mapped_column(
+        ForeignKey("documents.id"),
+        nullable=True
+    )
+
+    attachments: Mapped[list["Document"]] = relationship(
+        "Document",
+        back_populates="parent",
+        cascade="all, delete-orphan"
+    )
+
+    parent: Mapped[Optional["Document"]] = relationship(
+        "Document",
+        back_populates="attachments",
+        remote_side=[id]
     )
 
     processed_document: Mapped["ProcessedDocument"] = relationship(

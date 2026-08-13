@@ -18,7 +18,9 @@ Schema:
     "document_type": "",
     "title": "",
     "summary": "",
-    "keywords": []
+    "keywords": [],
+    "call_to_action": "",
+    "priority": ""
 }}
 
 Rules:
@@ -26,6 +28,8 @@ Rules:
 - Do not wrap the JSON inside ```json.
 - Do not explain anything.
 - Return exactly one JSON object.
+- Identify any call to action if present, otherwise return null.
+- Assign a priority (High, Medium, Low) based on the call to action, or null if there is none.
 
 Document:
 
