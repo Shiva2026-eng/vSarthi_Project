@@ -1,27 +1,16 @@
 import { Routes } from '@angular/router';
+import { SignUpComponent } from './components/sign-up-component/sign-up-component';
 import { LoginComponent } from './components/login-component/login-component';
-import { SignupComponent } from './components/signup-component/signup-component';
-import { LandingPage } from './pages/landing-page/landing-page';
-import { authGuard } from './guards/auth-guard';
-import { SummarisedDocument } from './components/LandingPage/summarised-document/summarised-document';
+import { HeroComponent } from './components/hero-component/hero-component';
 
 export const routes: Routes = [
-  {
-    path: '',
-    component: LoginComponent,
-  },
+  { path: '', component: LoginComponent },
   {
     path: 'signup',
-    component: SignupComponent,
+    component: SignUpComponent,
   },
   {
     path: 'dashboard',
-    component: LandingPage,
-    canActivate: [authGuard],
-  },
-  {
-    path: 'summary',
-    component: SummarisedDocument,
-    canActivate: [authGuard],
+    component: HeroComponent,
   },
 ];

@@ -1,0 +1,38 @@
+<div class="signup-container">
+  <div class="signup-card">
+    <h1>Create Account</h1>
+    <p class="subtitle">Signup to get Started</p>
+    <form [formGroup]="signupForm" (ngSubmit)="onSignup()">
+      <mat-form-field appearance="outline">
+        <mat-label>Full Name</mat-label>
+        <input matInput type="text" formControlName="name" placeholder="Enter your name" />
+        @if (this.signupForm.controls.name.hasError('required')) {
+          <mat-error> Name is Required </mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label> Email </mat-label>
+        <input matInput type="email" formControlName="email" placeholder="user@example.com" />
+        @if (this.signupForm.controls.email.hasError('required')) {
+          <mat-error> Email is required </mat-error>
+        }
+        @if (this.signupForm.controls.email.hasError('email')) {
+          <mat-error> Please enter a valid email </mat-error>
+        }
+      </mat-form-field>
+      <!-- Password -->
+      <mat-form-field appearance="outline">
+        <mat-label>Password</mat-label>
+
+        <input matInput type="password" formControlName="password" />
+      </mat-form-field>
+      <button mat-raised-button color="primary" type="submit" class="signup-button">
+        Create Account
+      </button>
+      <div class="login-link">
+        <span>Already have an account?</span>
+        <button mat-button type="button" routerLink="/">Login</button>
+      </div>
+    </form>
+  </div>
+</div>
