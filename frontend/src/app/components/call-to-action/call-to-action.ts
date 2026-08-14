@@ -1,15 +1,21 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
-interface CtaItem {
-  id: string;
-  documentName: string;
-  action: string;
-  priority: 'High' | 'Medium' | 'Low';
-  date: string;
+export interface DocumentWithCallToAction {
+  document_id: string;
+  document_type: string;
+  summary: string;
+  call_to_action: string;
 }
 
+export interface DocumentsResponse {
+  status: boolean;
+  message: string;
+  documents: DocumentWithCallToAction[];
+}
 @Component({
   selector: 'app-call-to-action',
   standalone: true,
@@ -17,29 +23,24 @@ interface CtaItem {
   templateUrl: './call-to-action.html',
   styleUrl: './call-to-action.scss',
 })
-export class CallToAction {
-  displayedColumns: string[] = ['documentName', 'action', 'priority', 'date'];
-  recentCtas: CtaItem[] = [
-    {
-      id: '1',
-      documentName: 'Q3_Financial_Report.pdf',
-      action: 'Review and approve budget allocations for next quarter',
-      priority: 'High',
-      date: '2026-08-14'
-    },
-    {
-      id: '2',
-      documentName: 'Project_Proposal_Alpha.docx',
-      action: 'Sign off on project deliverables',
-      priority: 'Medium',
-      date: '2026-08-13'
-    },
-    {
-      id: '3',
-      documentName: 'Vendor_Agreement.pdf',
-      action: 'Verify terms and conditions before signing',
-      priority: 'High',
-      date: '2026-08-12'
-    }
-  ];
+export class CallToAction implements OnInit {
+  displayedColumns: string[] = ['document_id', 'document_type', 'summary', 'call_to_action'];
+  recentCtas = signal<DocumentWithCallToAction[]>([]);
+  private http = inject(HttpClient);
+  fetchCtas() {
+    return this.http
+      .get<DocumentsResponse>(`${environment.baseUrl}/documents/call-to-actions`)
+      .subscribe({
+        next: (response) => {
+          console.log(response);
+          this.recentCtas.set(response.documents);
+        },
+        error: (e) => {
+          console.log(e.error.detail);
+        },
+      });
+  }
+  ngOnInit() {
+    this.fetchCtas();
+  }
 }

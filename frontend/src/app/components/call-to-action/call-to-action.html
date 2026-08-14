@@ -4,43 +4,47 @@
   </div>
 
   <div class="table-container">
-    @if (recentCtas.length === 0) {
+    @if (recentCtas().length === 0) {
       <div class="empty-state">
         <p>No recent call to actions found.</p>
       </div>
     } @else {
-      <table mat-table [dataSource]="recentCtas" class="cta-table">
-        
-        <ng-container matColumnDef="documentName">
-          <th mat-header-cell *matHeaderCellDef>Document</th>
-          <td mat-cell *matCellDef="let cta" class="filename-cell">
-            <span class="filename" [title]="cta.documentName">{{ cta.documentName }}</span>
+      <table mat-table [dataSource]="recentCtas()" class="cta-table">
+        <!-- Document ID -->
+        <ng-container matColumnDef="document_id">
+          <th mat-header-cell *matHeaderCellDef>Document ID</th>
+          <td mat-cell *matCellDef="let cta">
+            {{ cta.document_id }}
           </td>
         </ng-container>
 
-        <ng-container matColumnDef="action">
+        <!-- Document Type -->
+        <ng-container matColumnDef="document_type">
+          <th mat-header-cell *matHeaderCellDef>Document Type</th>
+          <td mat-cell *matCellDef="let cta">
+            {{ cta.document_type }}
+          </td>
+        </ng-container>
+
+        <!-- Summary -->
+        <ng-container matColumnDef="summary">
+          <th mat-header-cell *matHeaderCellDef>Summary</th>
+          <td mat-cell *matCellDef="let cta">
+            {{ cta.summary }}
+          </td>
+        </ng-container>
+
+        <!-- Call To Action -->
+        <ng-container matColumnDef="call_to_action">
           <th mat-header-cell *matHeaderCellDef>Action Required</th>
-          <td mat-cell *matCellDef="let cta">{{ cta.action }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="priority">
-          <th mat-header-cell *matHeaderCellDef>Priority</th>
           <td mat-cell *matCellDef="let cta">
-            <span class="badge" [class]="'priority-' + cta.priority.toLowerCase()">
-              {{ cta.priority }}
-            </span>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="date">
-          <th mat-header-cell *matHeaderCellDef>Date</th>
-          <td mat-cell *matCellDef="let cta">
-            {{ cta.date }}
+            {{ cta.call_to_action }}
           </td>
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
       </table>
     }
   </div>

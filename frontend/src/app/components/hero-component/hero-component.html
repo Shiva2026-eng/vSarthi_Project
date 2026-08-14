@@ -18,15 +18,14 @@
       </div>
     }
 
-    <app-dashboard-stats
-      [totalDocuments]="totalDocuments()"
-      [processingDocuments]="processingDocuments()"
-      [completedDocuments]="completedDocuments()"
-      [isOutlookConnected]="userProfile()?.connected_account?.outlook || false"
-    >
-    </app-dashboard-stats>
-
     @if (!outlet.isActivated) {
+      <app-dashboard-stats
+        [totalDocuments]="totalDocuments()"
+        [processingDocuments]="processingDocuments()"
+        [completedDocuments]="completedDocuments()"
+        [isOutlookConnected]="userProfile()?.connected_account?.outlook || false"
+      >
+      </app-dashboard-stats>
       <app-documents-table
         [documents]="documents()"
         [processingDocs]="processingDocs()"
@@ -34,7 +33,8 @@
         (refreshClicked)="fetchDocuments()"
         (uploadClicked)="openUploadModal()"
         (processClicked)="processDocument($event)"
-        (viewResultClicked)="viewResult($event)">
+        (viewResultClicked)="viewResult($event)"
+      >
       </app-documents-table>
     }
 
