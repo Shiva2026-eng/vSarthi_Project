@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID, uuid4
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import String, Text, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -42,7 +43,7 @@ class ProcessedDocument(Base):
         JSON,
         nullable=False
     )
-    call_to_action:Mapped[str|None]=mapped_column(
+    call_to_action: Mapped[Optional[str]] = mapped_column(
         Text,
         nullable=True
     )

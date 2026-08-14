@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal, computed, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import {
   DashboardService,
   UserProfile,
@@ -27,6 +27,7 @@ import { ResultModal } from './result-modal/result-modal';
     DocumentsTable,
     UploadModal,
     ResultModal,
+    RouterModule
   ],
   templateUrl: './hero-component.html',
   styleUrl: './hero-component.scss',

@@ -19,6 +19,12 @@
     }
   </div>
 
+  <div class="sidebar-section navigation-section">
+    <h3>Navigation</h3>
+    <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="btn btn-outline nav-link">Documents</a>
+    <a routerLink="/dashboard/call-to-action" routerLinkActive="active" class="btn btn-outline nav-link" style="margin-top: 0.5rem;">Calls to Action</a>
+  </div>
+
   <div class="sidebar-section actions-section">
     <h3>Actions</h3>
     <button class="btn btn-primary" (click)="uploadClicked.emit()">Upload Document</button>

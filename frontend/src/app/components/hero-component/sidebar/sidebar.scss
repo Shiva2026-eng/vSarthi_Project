@@ -1,0 +1,20 @@
+.sidebar-section {
+  &.navigation-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    
+    .nav-link {
+      display: block;
+      width: 100%;
+      text-align: left;
+      text-decoration: none;
+      
+      &.active {
+        background-color: var(--primary-color, #2563eb);
+        color: white;
+        border-color: var(--primary-color, #2563eb);
+      }
+    }
+  }
+}
