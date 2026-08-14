@@ -37,7 +37,7 @@ Document:
 """
 
     response = ollama.chat(
-    model="gemma3:12b",
+    model="gemma3:4b",
     format="json",
     messages=[
         {

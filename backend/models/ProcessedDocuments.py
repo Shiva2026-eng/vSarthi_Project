@@ -42,7 +42,10 @@ class ProcessedDocument(Base):
         JSON,
         nullable=False
     )
-
+    call_to_action:Mapped[str|None]=mapped_column(
+        Text,
+        nullable=True
+    )
     processed_at: Mapped[datetime] = mapped_column(
         default=datetime.utcnow,
         nullable=False

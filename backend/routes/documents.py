@@ -2,7 +2,7 @@ import os
 from uuid import UUID
 from typing import Annotated
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends,status
 
 from dependencies import db_dependency
 from models.Documents import Document
@@ -119,6 +119,7 @@ async def process_document_route(
             summary=result.get("summary"),
             extracted_text=text,
             structured_data=result,
+            call_to_action=result.get("call_to_action")
         )
 
         db.add(processed)
@@ -210,3 +211,32 @@ def get_document_by_id(document_id:UUID,db:db_dependency,user:user_dependency):
     if document is None:
         raise HTTPException(status_code=404,detail='No document found')
     return document
+
+@router.get("/call-to-actions", status_code=status.HTTP_200_OK)
+def get_documents_with_call_to_action(
+    user: user_dependency,
+    db: db_dependency,
+):
+    documents = (
+        db.query(ProcessedDocument)
+        .join(Document)
+        .filter(
+            ProcessedDocument.call_to_action.is_not(None),
+            Document.user_id == user["id"],
+        )
+        .all()
+    )
+
+    return {
+        "status": True,
+        "message": "Documents with call to actions fetched successfully.",
+        "documents": [
+            {
+                "document_id": str(document.document_id),
+                "document_type": document.document_type,
+                "summary": document.summary,
+                "call_to_action": document.call_to_action,
+            }
+            for document in documents
+        ],
+    }
