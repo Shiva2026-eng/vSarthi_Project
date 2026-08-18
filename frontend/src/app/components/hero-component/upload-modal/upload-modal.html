@@ -7,21 +7,36 @@
       </div>
       <div class="modal-body">
         <div class="file-upload-wrapper">
-          <input type="file" id="fileInput" class="file-input" (change)="fileSelected.emit($event)" [disabled]="isUploading" />
+          <input
+            type="file"
+            id="fileInput"
+            class="file-input"
+            (change)="fileSelected.emit($event)"
+            [disabled]="isUploading"
+          />
           <label for="fileInput" class="file-drop-area">
             <span class="upload-text">
               @if (selectedFile) {
-                <strong>{{ selectedFile?.name }}</strong> ({{ (selectedFile?.size || 0) / 1024 / 1024 | number:'1.2-2' }} MB)
+                <strong>{{ selectedFile?.name }}</strong> ({{
+                  (selectedFile?.size || 0) / 1024 / 1024 | number: '1.2-2'
+                }}
+                MB)
               } @else {
-                Drag & drop or click to select a file
+                Click to select a file
               }
             </span>
           </label>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-outline" (click)="closeModal.emit()" [disabled]="isUploading">Cancel</button>
-        <button class="btn btn-primary" (click)="uploadClicked.emit()" [disabled]="!selectedFile || isUploading">
+        <button class="btn btn-outline" (click)="closeModal.emit()" [disabled]="isUploading">
+          Cancel
+        </button>
+        <button
+          class="btn btn-primary"
+          (click)="uploadClicked.emit()"
+          [disabled]="!selectedFile || isUploading"
+        >
           @if (isUploading) {
             <span class="spinner"></span> Uploading...
           } @else {
