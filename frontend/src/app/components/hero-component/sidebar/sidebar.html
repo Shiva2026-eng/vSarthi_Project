@@ -27,24 +27,29 @@
 
   <div class="sidebar-section actions-section">
     <h3>Actions</h3>
-    <button class="btn btn-primary" (click)="uploadClicked.emit()">Upload Document</button>
 
-    @if (userProfile?.connected_account?.outlook) {
-      <button
-        class="btn btn-secondary"
-        (click)="fetchEmailsClicked.emit()"
-        [disabled]="isFetchingEmails"
-      >
-        @if (isFetchingEmails) {
-          <span class="spinner"></span> Fetching...
-        } @else {
-          Fetch Emails
-        }
-      </button>
+    @if (!isCallToActionRoute) {
+      <button class="btn btn-primary" (click)="uploadClicked.emit()">Upload Document</button>
+
+      @if (userProfile?.connected_account?.outlook) {
+        <button
+          class="btn btn-secondary"
+          (click)="fetchEmailsClicked.emit()"
+          [disabled]="isFetchingEmails"
+        >
+          @if (isFetchingEmails) {
+            <span class="spinner"></span> Fetching...
+          } @else {
+            Fetch Emails
+          }
+        </button>
+      } @else {
+        <button class="btn btn-outline" (click)="connectOutlookClicked.emit()">
+          Connect Outlook
+        </button>
+      }
     } @else {
-      <button class="btn btn-outline" (click)="connectOutlookClicked.emit()">
-        Connect Outlook
-      </button>
+      <button class="btn btn-primary" (click)="backToDashboardClicked.emit()">Back to Dashboard</button>
     }
   </div>
 

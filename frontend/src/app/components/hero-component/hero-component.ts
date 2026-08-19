@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal, computed, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule, NavigationEnd } from '@angular/router';
 import {
   DashboardService,
   UserProfile,
@@ -15,6 +15,7 @@ import { DashboardStats } from './dashboard-stats/dashboard-stats';
 import { DocumentsTable } from './documents-table/documents-table';
 import { UploadModal } from './upload-modal/upload-modal';
 import { ResultModal } from './result-modal/result-modal';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-hero-component',
@@ -46,6 +47,7 @@ export class HeroComponent implements OnInit {
   isLoadingDocuments = signal<boolean>(true);
   isUploading = signal<boolean>(false);
   isFetchingEmails = signal<boolean>(false);
+  isCallToActionRoute = signal<boolean>(false);
 
   // Modal State
   isUploadModalOpen = signal<boolean>(false);
@@ -80,6 +82,15 @@ export class HeroComponent implements OnInit {
     this.checkOutlookCallback();
     this.fetchUserProfile();
     this.fetchDocuments();
+    this.trackRouteChanges();
+  }
+
+  private trackRouteChanges() {
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe((event: NavigationEnd) => {
+      this.isCallToActionRoute.set(event.url.includes('/call-to-action'));
+    });
   }
 
   private checkOutlookCallback() {
@@ -265,5 +276,9 @@ export class HeroComponent implements OnInit {
     console.log('Outlook clicked');
     this.authService.removeAccessToken();
     this.router.navigate(['/']);
+  }
+
+  navigateToDashboard() {
+    this.router.navigate(['/dashboard']);
   }
 }

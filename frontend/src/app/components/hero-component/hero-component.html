@@ -3,9 +3,11 @@
     [userProfile]="userProfile()"
     [isFetchingEmails]="isFetchingEmails()"
     [isLoadingProfile]="isLoadingProfile()"
+    [isCallToActionRoute]="isCallToActionRoute()"
     (uploadClicked)="openUploadModal()"
     (connectOutlookClicked)="connectOutlook()"
     (fetchEmailsClicked)="fetchOutlookEmails()"
+    (backToDashboardClicked)="navigateToDashboard()"
     (logoutClicked)="logout()"
   >
   </app-sidebar>

@@ -14,9 +14,11 @@ export class Sidebar {
   @Input() userProfile: UserProfile | null = null;
   @Input() isFetchingEmails = false;
   @Input() isLoadingProfile = false;
+  @Input() isCallToActionRoute = false;
 
   @Output() uploadClicked = new EventEmitter<void>();
   @Output() connectOutlookClicked = new EventEmitter<void>();
   @Output() fetchEmailsClicked = new EventEmitter<void>();
   @Output() logoutClicked = new EventEmitter<void>();
+  @Output() backToDashboardClicked = new EventEmitter<void>();
 }
