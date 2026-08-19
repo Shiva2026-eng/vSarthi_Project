@@ -82,8 +82,8 @@ class Document(Base):
         cascade="all, delete-orphan",
         uselist=False
     )
-    file_path = mapped_column(String, nullable=True)
-    processing_status = mapped_column(
+    file_path:Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    processing_status:Mapped[str] = mapped_column(
         String,
         default="pending",
         nullable=True
