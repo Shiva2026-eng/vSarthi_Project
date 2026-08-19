@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import RedirectResponse
 from dependencies import db_dependency
 from utilities.current_user import get_current_user
+from utilities.decode_access_token import verify_access_token
 from uuid import UUID
 from services.user_service import (
     get_profile,
@@ -18,11 +19,12 @@ router = APIRouter(
     tags=['user']
 )
 
-user_dependency = Annotated[dict, Depends(get_current_user)]
+user_dependency = Annotated[dict, Depends(verify_access_token)]
+current_user_dependency = Annotated[dict, Depends(get_current_user)]
 
 
 @router.get("/my_profile")
-def get_profile_route(user: user_dependency):
+def get_profile_route(user: current_user_dependency):
     return get_profile(user)
 
 

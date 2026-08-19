@@ -8,9 +8,10 @@ from models.Documents import Document
 from models.ProcessedDocuments import ProcessedDocument
 from services.extractor import extract_text
 from services.llm import process_document
+from settings import settings
 
 
-UPLOAD_DIR = "uploads"
+UPLOAD_DIR = settings.UPLOAD_DIR
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 

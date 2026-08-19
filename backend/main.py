@@ -1,7 +1,4 @@
-from dotenv import load_dotenv
-
-load_dotenv()
-
+from settings import settings
 from fastapi import FastAPI
 from routes.auth import router as AuthRouter
 from routes.user import router as UserRouter

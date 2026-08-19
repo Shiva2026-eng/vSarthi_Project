@@ -64,7 +64,7 @@ def test_process_document_route_success(client, auth_headers):
         "keywords": ["test", "process"],
     }
 
-    with patch("routes.documents.process_document", return_value=mock_llm_result):
+    with patch("services.document_service.process_document", return_value=mock_llm_result):
         proc_res = client.post(
             f"/documents/process_document/{doc_id}",
             headers=auth_headers,

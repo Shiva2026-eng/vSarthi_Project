@@ -15,6 +15,7 @@ from models.User import User
 from models.UserToken import UserToken
 from models.Documents import Document
 from enums import SourceEnum
+from settings import settings
 
 
 def _format_email_content(msg_data: dict) -> tuple[str, str]:
@@ -111,24 +112,24 @@ async def _save_email_as_document(
     
     return document
 
-UPLOAD_DIR = "uploads"
+UPLOAD_DIR = settings.UPLOAD_DIR
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-REDIRECT_URI = "http://localhost:8000/user/outlook/callback"
+REDIRECT_URI = settings.REDIRECT_URI
 SCOPES = ["User.Read", "Mail.Read"]
 
 def get_authority() -> str:
-    tenant = os.getenv('TENANT_ID')
+    tenant = settings.TENANT_ID
     if not tenant or tenant.strip() == '' or tenant.lower() == 'none':
         tenant = 'common'
     return f"https://login.microsoftonline.com/{tenant}"
 
 def get_msal_app() -> msal.ConfidentialClientApplication:
-    client_id = os.getenv('CLIENT_ID')
-    client_secret = os.getenv('CLIENT_SECRET')
+    client_id = settings.CLIENT_ID
+    client_secret = settings.CLIENT_SECRET
     if not client_id or not client_secret:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="CLIENT_ID or CLIENT_SECRET is missing in environment variables."
+            detail="CLIENT_ID or CLIENT_SECRET is missing in settings."
         )
     return msal.ConfidentialClientApplication(
         client_id,

@@ -2,7 +2,7 @@ from uuid import UUID
 from typing import Annotated
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, status
 from dependencies import db_dependency
-from utilities.current_user import get_current_user
+from utilities.decode_access_token import verify_access_token
 from services.document_service import (
     upload_document,
     process_document_route,
@@ -16,7 +16,7 @@ router = APIRouter(
     tags=["Documents"],
 )
 
-user_dependency = Annotated[dict, Depends(get_current_user)]
+user_dependency = Annotated[dict, Depends(verify_access_token)]
 
 
 @router.post("/upload")

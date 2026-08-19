@@ -20,7 +20,7 @@ def test_connect_outlook_account_login(client, auth_headers):
     mock_msal_instance = MagicMock()
     mock_msal_instance.get_authorization_request_url.return_value = "https://login.microsoftonline.com/auth_url_mock"
 
-    with patch("routes.user.get_msal_app", return_value=mock_msal_instance):
+    with patch("services.user_service.get_msal_app", return_value=mock_msal_instance):
         response = client.get(
             "/user/connect-account/outlook/login",
             headers=auth_headers,
@@ -41,7 +41,7 @@ def test_outlook_callback_success(client, db_session, test_user):
         "scope": ["User.Read", "Mail.Read"],
     }
 
-    with patch("routes.user.get_msal_app", return_value=mock_msal_instance):
+    with patch("services.user_service.get_msal_app", return_value=mock_msal_instance):
         response = client.get(
             f"/user/outlook/callback?code=mock_code&state={test_user.id}",
             follow_redirects=False,
