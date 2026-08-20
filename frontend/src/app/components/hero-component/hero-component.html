@@ -44,20 +44,24 @@
   </main>
 </div>
 
-<app-upload-modal
-  [isOpen]="isUploadModalOpen()"
-  [selectedFile]="selectedFile()"
-  [isUploading]="isUploading()"
-  (closeModal)="closeUploadModal()"
-  (fileSelected)="onFileSelected($event)"
-  (uploadClicked)="uploadDocument()"
->
-</app-upload-modal>
+@defer (when isUploadModalOpen()) {
+  <app-upload-modal
+    [isOpen]="isUploadModalOpen()"
+    [selectedFile]="selectedFile()"
+    [isUploading]="isUploading()"
+    (closeModal)="closeUploadModal()"
+    (fileSelected)="onFileSelected($event)"
+    (uploadClicked)="uploadDocument()"
+  >
+  </app-upload-modal>
+}
 
-<app-result-modal
-  [isOpen]="isResultModalOpen()"
-  [selectedResult]="selectedResult()"
-  [isLoadingResult]="isLoadingResult()"
-  (closeModal)="closeResultModal()"
->
-</app-result-modal>
+@defer (when isResultModalOpen()) {
+  <app-result-modal
+    [isOpen]="isResultModalOpen()"
+    [selectedResult]="selectedResult()"
+    [isLoadingResult]="isLoadingResult()"
+    (closeModal)="closeResultModal()"
+  >
+  </app-result-modal>
+}
