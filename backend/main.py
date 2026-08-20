@@ -12,9 +12,9 @@ app.include_router(DocRouter)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["*"],
+    allow_methods=["GET","POST"],
     allow_credentials=True,
-    allow_headers=["*"]
+    allow_headers=["Authorization","Content-Type"]
 )
 @app.get("/")
 def greet():
