@@ -42,11 +42,9 @@ export class LoginComponent {
     this.authService.login(body).subscribe({
       next: (response) => {
         this.router.navigate(['/dashboard']);
-        console.log(response);
-        this.authService.setAccessToken(response.access_token);
       },
       error: (e) => {
-        this.showAlertBanner(e.error.detail, 'error');
+        this.showAlertBanner(e.error?.detail || 'Login failed', 'error');
       },
     });
   }

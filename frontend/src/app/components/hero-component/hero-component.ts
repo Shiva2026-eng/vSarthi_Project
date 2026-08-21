@@ -273,9 +273,14 @@ export class HeroComponent implements OnInit {
 
   // Auth Actions
   logout() {
-    console.log('Outlook clicked');
-    this.authService.removeAccessToken();
-    this.router.navigate(['/']);
+    this.authService.logout().subscribe({
+      next: () => {
+        this.router.navigate(['/']);
+      },
+      error: () => {
+        this.router.navigate(['/']);
+      },
+    });
   }
 
   navigateToDashboard() {

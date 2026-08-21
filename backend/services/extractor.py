@@ -45,5 +45,4 @@ async def extract_docx(contents: bytes) -> str:
         paragraph.text
         for paragraph in document.paragraphs
     )
-
     return text

@@ -5,18 +5,15 @@ from uuid import UUID
 from datetime import datetime
 from typing import Optional
 from sqlalchemy.orm import Session
-
 import msal
 import httpx
 from fastapi import HTTPException, status
 from fastapi.responses import RedirectResponse
-
 from models.User import User
 from models.UserToken import UserToken
 from models.Documents import Document
 from enums import SourceEnum
 from settings import settings
-
 
 def _format_email_content(msg_data: dict) -> tuple[str, str]:
     subject = msg_data.get("subject") or "Untitled Email"

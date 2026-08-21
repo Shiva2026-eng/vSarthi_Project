@@ -11,10 +11,13 @@ app.include_router(UserRouter)
 app.include_router(DocRouter)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["GET","POST"],
+    allow_origins=[
+        "http://localhost:4200",
+        "http://127.0.0.1:4200",
+    ],
     allow_credentials=True,
-    allow_headers=["Authorization","Content-Type"]
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 @app.get("/")
 def greet():
@@ -22,4 +25,3 @@ def greet():
         "success":True,
         "message":"App working correctly!"
     }
-    

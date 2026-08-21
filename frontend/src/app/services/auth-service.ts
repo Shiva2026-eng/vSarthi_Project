@@ -1,30 +1,75 @@
-import { inject, Service } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
+import { tap, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
+
 interface TokenResponse {
   access_token: string;
   token_type: string;
 }
-@Service()
+
+function getStoredAuthState(): boolean {
+  if (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined' && window.localStorage) {
+    return window.localStorage.getItem('is_logged_in') === 'true';
+  }
+  return false;
+}
+
+function setStoredAuthState(status: boolean): void {
+  if (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined' && window.localStorage) {
+    if (status) {
+      window.localStorage.setItem('is_logged_in', 'true');
+    } else {
+      window.localStorage.removeItem('is_logged_in');
+      window.localStorage.removeItem('access_token');
+    }
+  }
+}
+
+@Injectable({
+  providedIn: 'root',
+})
 export class AuthService {
   private http = inject(HttpClient);
+  private loggedIn = signal<boolean>(getStoredAuthState());
+
   signup(data: any) {
     return this.http.post(`${environment.baseUrl}/auth/signup`, data);
   }
+
   login(data: any) {
-    return this.http.post<TokenResponse>(`${environment.baseUrl}/auth/login`, data, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    });
+    return this.http
+      .post<TokenResponse>(`${environment.baseUrl}/auth/login`, data, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      })
+      .pipe(
+        tap(() => {
+          this.setLoggedIn(true);
+        })
+      );
   }
-  setAccessToken(token: string) {
-    localStorage.setItem('access_token', token);
+
+  logout() {
+    return this.http.post(`${environment.baseUrl}/auth/logout`, {}).pipe(
+      tap(() => {
+        this.setLoggedIn(false);
+      }),
+      catchError(() => {
+        this.setLoggedIn(false);
+        return of(null);
+      })
+    );
   }
-  removeAccessToken() {
-    localStorage.removeItem('access_token');
+
+  setLoggedIn(status: boolean) {
+    this.loggedIn.set(status);
+    setStoredAuthState(status);
   }
+
   isLoggedIn() {
-    return localStorage.getItem('access_token') != null;
+    return this.loggedIn() || getStoredAuthState();
   }
 }
