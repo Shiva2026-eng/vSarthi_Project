@@ -1,75 +1,35 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
-import { tap, catchError } from 'rxjs/operators';
-import { of } from 'rxjs';
-
-interface TokenResponse {
-  access_token: string;
-  token_type: string;
-}
-
-function getStoredAuthState(): boolean {
-  if (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined' && window.localStorage) {
-    return window.localStorage.getItem('is_logged_in') === 'true';
-  }
-  return false;
-}
-
-function setStoredAuthState(status: boolean): void {
-  if (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined' && window.localStorage) {
-    if (status) {
-      window.localStorage.setItem('is_logged_in', 'true');
-    } else {
-      window.localStorage.removeItem('is_logged_in');
-      window.localStorage.removeItem('access_token');
-    }
-  }
-}
+import { firstValueFrom } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
   private http = inject(HttpClient);
-  private loggedIn = signal<boolean>(getStoredAuthState());
+  private baseUrl = environment.baseUrl;
 
   signup(data: any) {
-    return this.http.post(`${environment.baseUrl}/auth/signup`, data);
+    return this.http.post(`${this.baseUrl}/auth/signup`, data);
   }
 
   login(data: any) {
-    return this.http
-      .post<TokenResponse>(`${environment.baseUrl}/auth/login`, data, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      })
-      .pipe(
-        tap(() => {
-          this.setLoggedIn(true);
-        })
-      );
+    return this.http.post(`${this.baseUrl}/auth/login`, data, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
   }
 
   logout() {
-    return this.http.post(`${environment.baseUrl}/auth/logout`, {}).pipe(
-      tap(() => {
-        this.setLoggedIn(false);
-      }),
-      catchError(() => {
-        this.setLoggedIn(false);
-        return of(null);
-      })
-    );
+    return this.http.post(`${this.baseUrl}/auth/logout`, {});
   }
 
-  setLoggedIn(status: boolean) {
-    this.loggedIn.set(status);
-    setStoredAuthState(status);
-  }
-
-  isLoggedIn() {
-    return this.loggedIn() || getStoredAuthState();
+  async checkAuth(): Promise<boolean> {
+    try {
+      await firstValueFrom(this.http.get(`${this.baseUrl}/user/my_profile`));
+      return true;
+    } catch {
+      return false;
+    }
   }
 }

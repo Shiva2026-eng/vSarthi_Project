@@ -9,58 +9,79 @@ describe('AuthService', () => {
   let httpMock: HttpTestingController;
 
   beforeEach(() => {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.clear();
-    }
     TestBed.configureTestingModule({
-      providers: [
-        AuthService,
-        provideHttpClient(),
-        provideHttpClientTesting(),
-      ],
+      providers: [AuthService, provideHttpClient(), provideHttpClientTesting()],
     });
     service = TestBed.inject(AuthService);
     httpMock = TestBed.inject(HttpTestingController);
   });
 
   afterEach(() => {
-    if (httpMock) {
-      httpMock.verify();
-    }
-    if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.clear();
-    }
+    httpMock.verify();
   });
 
   it('should be created', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should handle login and update loggedIn state', () => {
-    const mockData = { username: 'test@example.com', password: 'password' };
-    const mockResponse = { access_token: 'dummy_token', token_type: 'Bearer' };
+  it('should send signup request', () => {
+    const signupData = { name: 'Test', email: 'test@example.com', password: 'secretpassword' };
 
-    service.login(mockData).subscribe((res) => {
-      expect(res).toEqual(mockResponse);
-      expect(service.isLoggedIn()).toBe(true);
+    service.signup(signupData).subscribe((res) => {
+      expect(res).toEqual({ success: true });
+    });
+
+    const req = httpMock.expectOne(`${environment.baseUrl}/auth/signup`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual(signupData);
+    req.flush({ success: true });
+  });
+
+  it('should send login request with form headers', () => {
+    const loginData = 'username=test%40example.com&password=secretpassword';
+
+    service.login(loginData).subscribe((res) => {
+      expect(res).toBeDefined();
     });
 
     const req = httpMock.expectOne(`${environment.baseUrl}/auth/login`);
     expect(req.request.method).toBe('POST');
-    req.flush(mockResponse);
+    expect(req.request.headers.get('Content-Type')).toBe('application/x-www-form-urlencoded');
+    req.flush({ success: true });
   });
 
-  it('should handle logout and clear state', () => {
-    service.setLoggedIn(true);
-    expect(service.isLoggedIn()).toBe(true);
-
-    service.logout().subscribe(() => {
-      expect(service.isLoggedIn()).toBe(false);
+  it('should send logout request', () => {
+    service.logout().subscribe((res) => {
+      expect(res).toEqual({ success: true });
     });
 
     const req = httpMock.expectOne(`${environment.baseUrl}/auth/logout`);
     expect(req.request.method).toBe('POST');
-    req.flush({ success: true, message: 'Successfully logged out' });
+    req.flush({ success: true });
+  });
+
+  it('should return true on checkAuth when user profile returns successfully', async () => {
+    const checkPromise = service.checkAuth();
+
+    const req = httpMock.expectOne(`${environment.baseUrl}/user/my_profile`);
+    expect(req.request.method).toBe('GET');
+    req.flush({
+      success: true,
+      details: { id: '1', email: 'test@example.com', name: 'Test', username: 'test' },
+    });
+
+    const isAuthenticated = await checkPromise;
+    expect(isAuthenticated).toBe(true);
+  });
+
+  it('should return false on checkAuth when user profile fails', async () => {
+    const checkPromise = service.checkAuth();
+
+    const req = httpMock.expectOne(`${environment.baseUrl}/user/my_profile`);
+    expect(req.request.method).toBe('GET');
+    req.flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
+
+    const isAuthenticated = await checkPromise;
+    expect(isAuthenticated).toBe(false);
   });
 });
-
