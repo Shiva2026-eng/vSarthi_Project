@@ -4,8 +4,11 @@ from routes.auth import router as AuthRouter
 from routes.user import router as UserRouter
 from routes.documents import router as DocRouter
 from fastapi.middleware.cors import CORSMiddleware
+from utilities.exception_handlers import register_exception_handlers
 
-app=FastAPI()
+app = FastAPI()
+register_exception_handlers(app)
+
 app.include_router(AuthRouter)
 app.include_router(UserRouter)
 app.include_router(DocRouter)
