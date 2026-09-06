@@ -52,19 +52,6 @@ def test_verify_access_token_missing_id():
 
 
 def test_get_current_user_valid(db_session, test_user):
-    token = create_access_token(
-        email=test_user.email,
-        user_id=test_user.id,
-        life=timedelta(minutes=15),
-    )
-    user_dict = get_current_user(token, db_session)
-
-    assert user_dict["id"] == test_user.id
-    assert user_dict["email"] == test_user.email
-    assert user_dict["name"] == test_user.name
-
-
-def test_get_current_user_with_token_dict(db_session, test_user):
     token_data = {"id": test_user.id, "email": test_user.email}
     user_dict = get_current_user(token_data, db_session)
 
@@ -73,17 +60,10 @@ def test_get_current_user_with_token_dict(db_session, test_user):
     assert user_dict["name"] == test_user.name
 
 
-def test_get_current_user_invalid_token(db_session):
-    with pytest.raises(HTTPException) as exc_info:
-        get_current_user("invalid.jwt.token", db_session)
-    assert exc_info.value.status_code == 401
-    assert "Invalid or expired token" in exc_info.value.detail
-
-
 def test_get_current_user_user_not_found(db_session):
     non_existent_id = uuid4()
-    token = create_access_token("notfound@example.com", non_existent_id, timedelta(minutes=15))
+    token_data = {"id": non_existent_id, "email": "notfound@example.com"}
     with pytest.raises(HTTPException) as exc_info:
-        get_current_user(token, db_session)
+        get_current_user(token_data, db_session)
     assert exc_info.value.status_code == 401
     assert "User not found" in exc_info.value.detail
