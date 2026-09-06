@@ -1,30 +1,23 @@
-from typing import Annotated, Optional, Union
+from typing import Annotated, Optional
 from uuid import UUID
-from fastapi import Cookie, Depends, HTTPException, Request, status
+from fastapi import Cookie, Depends, HTTPException, status
 from jose import JWTError, jwt
 from settings import settings
 
 
 def get_token_from_request(
-    request: Request,
     access_token: Optional[str] = Cookie(None),
 ) -> str:
-    if access_token:
-        return access_token
-
-    auth_header = request.headers.get("Authorization")
-    if auth_header and auth_header.startswith("Bearer "):
-        return auth_header.split("Bearer ", 1)[1].strip()
-
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid or expired token",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    if not access_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+        )
+    return access_token
 
 
 def verify_access_token(
-    token: Annotated[Union[str, dict], Depends(get_token_from_request)]
+    token: Annotated[str, Depends(get_token_from_request)]
 ) -> dict:
     if isinstance(token, dict):
         return token
@@ -36,7 +29,6 @@ def verify_access_token(
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired token",
-                headers={"WWW-Authenticate": "Bearer"},
             )
         return {
             "id": UUID(user_id) if isinstance(user_id, str) else user_id,
@@ -46,5 +38,4 @@ def verify_access_token(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
         )

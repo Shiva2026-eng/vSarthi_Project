@@ -1,5 +1,4 @@
 from schemas.user_request import UserRequestModel
-from schemas.token_response import TokenResponse
 from fastapi import APIRouter, HTTPException, status, Depends, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
@@ -15,16 +14,16 @@ router = APIRouter(
 def signup(user: UserRequestModel, db: db_dependency):
     return create_user(user, db)
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login")
 def login_route(
     form_user: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: db_dependency,
     response: Response,
 ):
-    result = login(form_user.username, form_user.password, db)
+    token = login(form_user.username, form_user.password, db)
     response.set_cookie(
         key="access_token",
-        value=result["access_token"],
+        value=token,
         httponly=True,
         max_age=1200,
         expires=1200,
@@ -32,7 +31,10 @@ def login_route(
         secure=False,
         path="/",
     )
-    return result
+    return {
+        "success": True,
+        "message": "Successfully logged in"
+    }
 
 @router.post("/logout")
 def logout_route(response: Response):

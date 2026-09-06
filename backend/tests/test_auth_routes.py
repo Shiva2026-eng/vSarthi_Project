@@ -31,11 +31,12 @@ def test_login_success(client, test_user):
     response = client.post("/auth/login", data=data)
     assert response.status_code == 200
     json_data = response.json()
-    assert "access_token" in json_data
-    assert json_data["token_type"] == "Bearer"
+    assert json_data["success"] is True
+    assert json_data["message"] == "Successfully logged in"
+    # Token must NOT be in the response body
+    assert "access_token" not in json_data
     # Verify cookie is set
     assert "access_token" in response.cookies
-    assert response.cookies["access_token"] == json_data["access_token"]
 
 
 def test_logout_success(client):
@@ -55,7 +56,7 @@ def test_auth_via_cookie(client, test_user):
     login_res = client.post("/auth/login", data=data)
     assert login_res.status_code == 200
 
-    # Request /user/my_profile without Authorization header (relies on cookie)
+    # Request /user/my_profile relying entirely on the cookie
     profile_res = client.get("/user/my_profile")
     assert profile_res.status_code == 200
     assert profile_res.json()["details"]["email"] == test_user.email

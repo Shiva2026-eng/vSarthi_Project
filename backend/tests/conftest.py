@@ -91,10 +91,16 @@ def test_user(db_session):
 
 
 @pytest.fixture
-def auth_headers(test_user):
+def auth_cookies(test_user):
     token = create_access_token(
         email=test_user.email,
         user_id=test_user.id,
         life=timedelta(minutes=30),
     )
-    return {"Authorization": f"Bearer {token}"}
+    return {"access_token": token}
+
+
+@pytest.fixture
+def auth_client(client, auth_cookies):
+    client.cookies.set("access_token", auth_cookies["access_token"])
+    return client

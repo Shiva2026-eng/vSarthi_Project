@@ -3,8 +3,8 @@ from uuid import uuid4
 from models.UserToken import UserToken
 
 
-def test_get_profile(client, auth_headers, test_user):
-    response = client.get("/user/my_profile", headers=auth_headers)
+def test_get_profile(auth_client, test_user):
+    response = auth_client.get("/user/my_profile")
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
@@ -16,15 +16,12 @@ def test_get_profile_unauthenticated(client):
     assert response.status_code == 401
 
 
-def test_connect_outlook_account_login(client, auth_headers):
+def test_connect_outlook_account_login(auth_client):
     mock_msal_instance = MagicMock()
     mock_msal_instance.get_authorization_request_url.return_value = "https://login.microsoftonline.com/auth_url_mock"
 
     with patch("services.user_service.get_msal_app", return_value=mock_msal_instance):
-        response = client.get(
-            "/user/connect-account/outlook/login",
-            headers=auth_headers,
-        )
+        response = auth_client.get("/user/connect-account/outlook/login")
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
@@ -62,13 +59,13 @@ def test_outlook_callback_success(client, db_session, test_user):
         assert token_entry.access_token == "mock_access_token_123"
 
 
-def test_outlook_messages_no_token(client, auth_headers):
-    response = client.get("/user/outlook/messages", headers=auth_headers)
+def test_outlook_messages_no_token(auth_client):
+    response = auth_client.get("/user/outlook/messages")
     assert response.status_code == 401
     assert "No Outlook token found" in response.json()["detail"]
 
 
-def test_outlook_messages_with_token(client, auth_headers, test_user, db_session):
+def test_outlook_messages_with_token(auth_client, test_user, db_session):
     # Add UserToken to DB
     token_entry = UserToken(
         user_id=test_user.id,
@@ -96,7 +93,7 @@ def test_outlook_messages_with_token(client, auth_headers, test_user, db_session
     mock_async_client.__aenter__.return_value.get.return_value = mock_graph_response
 
     with patch("httpx.AsyncClient", return_value=mock_async_client):
-        response = client.get("/user/outlook/messages", headers=auth_headers)
+        response = auth_client.get("/user/outlook/messages")
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
@@ -104,7 +101,7 @@ def test_outlook_messages_with_token(client, auth_headers, test_user, db_session
         assert data["messages"][0]["subject"] == "Project Update"
 
 
-def test_ingest_outlook_email(client, auth_headers, test_user, db_session):
+def test_ingest_outlook_email(auth_client, test_user, db_session):
     # Add UserToken
     token_entry = UserToken(
         user_id=test_user.id,
@@ -128,10 +125,7 @@ def test_ingest_outlook_email(client, auth_headers, test_user, db_session):
     mock_async_client.__aenter__.return_value.get.return_value = mock_graph_response
 
     with patch("httpx.AsyncClient", return_value=mock_async_client):
-        response = client.post(
-            "/user/outlook/ingest-email/msg_001",
-            headers=auth_headers,
-        )
+        response = auth_client.post("/user/outlook/ingest-email/msg_001")
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True

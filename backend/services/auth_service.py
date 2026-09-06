@@ -29,16 +29,13 @@ def create_user(user: UserRequestModel, db: Session) -> dict:
     }
 
 
-def login(email: str, password: str, db: Session) -> dict:
+def login(email: str, password: str, db: Session) -> str:
     user_in_database = db.query(User).filter(User.email == email).first()
     if user_in_database is None:
         raise HTTPException(status_code=404, detail='No such user found')
     
     if bcrypt_context.verify(password, user_in_database.password_hash):
         token = create_access_token(email, user_in_database.id, timedelta(minutes=20))
-        return {
-            "access_token": token,
-            "token_type": 'Bearer'
-        }
+        return token
     else:
         raise HTTPException(status_code=401, detail='Invalid username or password')
