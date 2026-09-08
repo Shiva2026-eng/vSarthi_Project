@@ -1,7 +1,7 @@
 import os
 from uuid import UUID
 from sqlalchemy.orm import Session, selectinload
-from fastapi import HTTPException, UploadFile
+from fastapi import HTTPException, UploadFile, status
 
 from models.Documents import Document
 from models.ProcessedDocuments import ProcessedDocument
@@ -17,6 +17,12 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 async def upload_document(user_id: UUID, db: Session, file: UploadFile) -> dict:
     try:
         contents = await file.read()
+        if len(contents) > settings.MAX_FILE_SIZE_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                detail=f"File size exceeds the maximum allowed limit of {settings.MAX_FILE_SIZE_MB}MB.",
+            )
+
         filename = file.filename or "unknown"
         extension = os.path.splitext(filename)[1].lstrip(".")
 
@@ -51,6 +57,9 @@ async def upload_document(user_id: UUID, db: Session, file: UploadFile) -> dict:
             },
         }
 
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))

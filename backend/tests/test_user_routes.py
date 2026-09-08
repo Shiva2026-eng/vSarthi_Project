@@ -207,3 +207,92 @@ def test_outlook_token_reactive_refresh_on_401(auth_client, test_user, db_sessio
         data = response.json()
         assert data["messages"][0]["subject"] == "Refreshed!"
         mock_msal.acquire_token_by_refresh_token.assert_called_once()
+
+
+def test_ingest_outlook_email_exceeds_max_size(auth_client, test_user, db_session):
+    token_entry = UserToken(
+        user_id=test_user.id,
+        provider="outlook",
+        access_token="valid_mock_token",
+    )
+    db_session.add(token_entry)
+    db_session.commit()
+
+    mock_graph_response = MagicMock()
+    mock_graph_response.status_code = 200
+    mock_graph_response.json.return_value = {
+        "id": "msg_huge",
+        "subject": "Huge Email",
+        "body": {"content": "X" * 200},
+        "sender": {"emailAddress": {"address": "boss@example.com"}},
+        "receivedDateTime": "2026-08-09T10:00:00Z",
+    }
+
+    mock_async_client = MagicMock()
+    mock_async_client.__aenter__.return_value.get.return_value = mock_graph_response
+
+    with patch("services.user_service.settings.MAX_FILE_SIZE_BYTES", 50), \
+         patch("httpx.AsyncClient", return_value=mock_async_client):
+        response = auth_client.post("/user/outlook/ingest-email/msg_huge")
+        assert response.status_code == 413
+        assert "Email content size exceeds the maximum allowed limit" in response.json()["detail"]
+
+
+def test_ingest_outlook_email_oversized_attachment_skipped(auth_client, test_user, db_session):
+    import base64
+    from models.Documents import Document
+
+    token_entry = UserToken(
+        user_id=test_user.id,
+        provider="outlook",
+        access_token="valid_mock_token",
+    )
+    db_session.add(token_entry)
+    db_session.commit()
+
+    mock_email_response = MagicMock()
+    mock_email_response.status_code = 200
+    mock_email_response.json.return_value = {
+        "id": "msg_att",
+        "subject": "Email with huge attachment",
+        "body": {"content": "Short text"},
+        "sender": {"emailAddress": {"address": "boss@example.com"}},
+        "receivedDateTime": "2026-08-09T10:00:00Z",
+        "hasAttachments": True,
+    }
+
+    mock_att_response = MagicMock()
+    mock_att_response.status_code = 200
+    mock_att_response.json.return_value = {
+        "value": [
+            {
+                "@odata.type": "#microsoft.graph.fileAttachment",
+                "name": "giant_file.pdf",
+                "contentType": "application/pdf",
+                "contentBytes": base64.b64encode(b"A" * 1000).decode("utf-8"),
+            },
+            {
+                "@odata.type": "#microsoft.graph.fileAttachment",
+                "name": "small_file.txt",
+                "contentType": "text/plain",
+                "contentBytes": base64.b64encode(b"Small content").decode("utf-8"),
+            }
+        ]
+    }
+
+    mock_async_client = MagicMock()
+    mock_async_client.__aenter__.return_value.get.side_effect = [mock_email_response, mock_att_response]
+
+    # Set limit so email body & small file pass, but 1000-byte giant file is skipped
+    with patch("services.user_service.settings.MAX_FILE_SIZE_BYTES", 500), \
+         patch("httpx.AsyncClient", return_value=mock_async_client):
+        response = auth_client.post("/user/outlook/ingest-email/msg_att")
+        assert response.status_code == 200
+        doc_id = response.json()["document_id"]
+
+        # Check DB attachments: small_file should exist, giant_file should be skipped
+        from uuid import UUID
+        attachments = db_session.query(Document).filter(Document.parent_id == UUID(doc_id)).all()
+        att_names = [a.filename for a in attachments]
+        assert "small_file.txt" in att_names
+        assert "giant_file.pdf" not in att_names

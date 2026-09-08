@@ -38,6 +38,13 @@ async def _save_email_as_document(
 ) -> Optional[Document]:
     formatted_content, filename = _format_email_content(msg_data)
     
+    content_bytes = formatted_content.encode("utf-8")
+    if len(content_bytes) > settings.MAX_FILE_SIZE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail=f"Email content size exceeds the maximum allowed limit of {settings.MAX_FILE_SIZE_MB}MB."
+        )
+
     existing_doc = db.query(Document).filter(
         Document.user_id == user_uuid,
         Document.filename == filename,
@@ -52,7 +59,7 @@ async def _save_email_as_document(
         filename=filename,
         mime_type="text/plain",
         extension="txt",
-        size=len(formatted_content.encode("utf-8")),
+        size=len(content_bytes),
         source=SourceEnum.OUTLOOK,
         processing_status="pending",
         file_path=""
@@ -84,6 +91,10 @@ async def _save_email_as_document(
                     att_ext = os.path.splitext(att_name)[1].lstrip(".")
                     att_mime = att.get("contentType") or "application/octet-stream"
                     att_bytes = base64.b64decode(att.get("contentBytes", ""))
+                    
+                    # Skip oversized attachments
+                    if len(att_bytes) > settings.MAX_FILE_SIZE_BYTES:
+                        continue
                     
                     att_doc = Document(
                         user_id=user_uuid,
@@ -398,9 +409,14 @@ async def ingest_all_outlook_emails(user: dict, db: Session) -> dict:
     ingested_count = 0
     
     for msg_data in messages:
-        document = await _save_email_as_document(msg_data, user_uuid, db, headers, msg_data.get("id"))
-        if document:
-            ingested_count += 1
+        try:
+            document = await _save_email_as_document(msg_data, user_uuid, db, headers, msg_data.get("id"))
+            if document:
+                ingested_count += 1
+        except HTTPException as e:
+            if e.status_code == status.HTTP_413_CONTENT_TOO_LARGE or e.status_code == 413:
+                continue
+            raise
     
     return {
         "success": True,

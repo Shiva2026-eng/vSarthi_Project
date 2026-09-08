@@ -20,6 +20,20 @@ def test_upload_document_success(auth_client):
     assert "document_id" in data["data"]
 
 
+def test_upload_document_exceeds_max_size(auth_client):
+    with patch("services.document_service.settings.MAX_FILE_SIZE_BYTES", 50):
+        file_content = b"A" * 100
+        files = {
+            "file": ("oversized.txt", file_content, "text/plain"),
+        }
+        response = auth_client.post(
+            "/documents/upload",
+            files=files,
+        )
+        assert response.status_code == 413
+        assert "exceeds the maximum allowed limit" in response.json()["detail"]
+
+
 def test_upload_document_unauthenticated(client):
     file_content = b"Content without token"
     files = {"file": ("test.txt", file_content, "text/plain")}
