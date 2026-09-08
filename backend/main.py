@@ -15,8 +15,7 @@ app.include_router(DocRouter)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:4200",
-        "http://127.0.0.1:4200",
+        settings.ANGULAR_URL
     ],
     allow_credentials=True,
     allow_methods=["*"],

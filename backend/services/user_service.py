@@ -27,7 +27,6 @@ def _format_email_content(msg_data: dict) -> tuple[str, str]:
     safe_filename = "".join(c if c.isalnum() or c in " ._-" else "_" for c in subject)[:45]
     date_str = msg_data.get("receivedDateTime", "")[:19].replace("T", "_").replace(":", "-")
     filename = f"Outlook - {safe_filename}_{date_str}.txt"
-    
     return formatted_content, filename
 
 async def _save_email_as_document(

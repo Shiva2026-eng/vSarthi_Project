@@ -1,6 +1,5 @@
 import os
 from uuid import UUID
-from typing import Annotated
 from sqlalchemy.orm import Session, selectinload
 from fastapi import HTTPException, UploadFile
 
@@ -41,8 +40,7 @@ async def upload_document(user_id: UUID, db: Session, file: UploadFile) -> dict:
 
         document.file_path = filepath
         db.commit()
-        db.refresh(document)
-
+        
         return {
             "success": True,
             "message": "Document uploaded successfully. Ready for processing.",

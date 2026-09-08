@@ -79,7 +79,7 @@ def process_document(text: str) -> dict:
         
         # Validate output against strict Pydantic model
         validated_result = DocumentAnalysisResult.model_validate(parsed_data)
-        return validated_result.model_dump()
+        return validated_result.model_dump()#model_dump is used to convert the pydantic model response into a python dict.
 
     except json.JSONDecodeError:
         # Safe fallback
