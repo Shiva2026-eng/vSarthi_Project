@@ -16,3 +16,8 @@ class UserRequestModel(BaseModel):
         if not value.replace(" ", "").isalpha():
             raise ValueError("Name should contain only letters and spaces.")
         return value.strip()
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        return value.strip().lower()

@@ -80,3 +80,33 @@ def test_login_non_existent_user(client):
     response = client.post("/auth/login", data=data)
     assert response.status_code == 404
     assert "No such user found" in response.json()["detail"]
+
+
+def test_signup_and_login_case_insensitivity(client):
+    # 1. Signup with mixed/upper case email
+    payload = {
+        "name": "Case Test User",
+        "email": "ShivanshLavaniya456@Gmail.COM",
+        "password": "password12345",
+    }
+    signup_res = client.post("/auth/signup", json=payload)
+    assert signup_res.status_code == 201
+
+    # 2. Trying to signup with lowercase version must fail with 403 Duplicate
+    dup_payload = {
+        "name": "Case Test User",
+        "email": "shivanshlavaniya456@gmail.com",
+        "password": "password12345",
+    }
+    dup_res = client.post("/auth/signup", json=dup_payload)
+    assert dup_res.status_code == 403
+    assert "already exists" in dup_res.json()["detail"]
+
+    # 3. Login with all-caps email should succeed
+    login_data = {
+        "username": "SHIVANSHLAVANIYA456@GMAIL.COM",
+        "password": "password12345",
+    }
+    login_res = client.post("/auth/login", data=login_data)
+    assert login_res.status_code == 200
+    assert login_res.json()["success"] is True
