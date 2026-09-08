@@ -3,7 +3,7 @@ import re
 import base64
 from uuid import UUID
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Tuple
 from sqlalchemy.orm import Session
 import msal
 import httpx
@@ -134,6 +134,83 @@ def get_msal_app() -> msal.ConfidentialClientApplication:
         client_credential=client_secret
     )
 
+def is_token_expired(user_token: UserToken, buffer_seconds: int = 300) -> bool:
+    """
+    Check if the token is expired or within the buffer window of expiration.
+    """
+    if not user_token.updated_at or not user_token.expires_in:
+        return False
+    age = (datetime.utcnow() - user_token.updated_at).total_seconds()
+    return age >= (user_token.expires_in - buffer_seconds)
+
+def refresh_outlook_token(user_token: UserToken, db: Session) -> Optional[str]:
+    """
+    Refresh Microsoft Outlook access token using the stored refresh token.
+    """
+    if not user_token.refresh_token:
+        return None
+
+    try:
+        msal_app = get_msal_app()
+        result = msal_app.acquire_token_by_refresh_token(
+            user_token.refresh_token,
+            scopes=SCOPES,
+        )
+
+        if "access_token" in result:
+            user_token.access_token = result.get("access_token")
+            if result.get("refresh_token"):
+                user_token.refresh_token = result.get("refresh_token")
+            if result.get("expires_in"):
+                user_token.expires_in = result.get("expires_in")
+            if result.get("token_type"):
+                user_token.token_type = result.get("token_type")
+            raw_scope = result.get("scope")
+            if raw_scope:
+                user_token.scope = " ".join(raw_scope) if isinstance(raw_scope, list) else str(raw_scope)
+            user_token.updated_at = datetime.utcnow()
+
+            db.commit()
+            db.refresh(user_token)
+            return user_token.access_token
+    except Exception:
+        db.rollback()
+
+    return None
+
+def get_valid_outlook_token(user_uuid: UUID, db: Session) -> Tuple[UserToken, str]:
+    """
+    Retrieve or refresh a valid Outlook access token for the given user.
+    """
+    user_token = (
+        db.query(UserToken)
+        .filter(
+            UserToken.user_id == user_uuid,
+            UserToken.provider == "outlook",
+        )
+        .first()
+    )
+
+    if not user_token or (not user_token.access_token and not user_token.refresh_token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No Outlook token found. Please connect your Outlook account first.",
+        )
+
+    # If the token is expired or close to expiration, try proactive refresh
+    if is_token_expired(user_token) and user_token.refresh_token:
+        new_token = refresh_outlook_token(user_token, db)
+        if new_token:
+            return user_token, new_token
+
+    if not user_token.access_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Outlook session expired. Please reconnect your Outlook account.",
+        )
+
+    return user_token, user_token.access_token
+
 def get_profile(user: dict) -> dict:
     return {
         "success": True,
@@ -215,30 +292,20 @@ def outlook_callback(code: str, state: str, db: Session) -> RedirectResponse:
 
 async def get_outlook_messages(user: dict, db: Session) -> dict:
     user_uuid = UUID(str(user["id"]))
+    user_token, access_token = get_valid_outlook_token(user_uuid, db)
     
-    user_token = (
-        db.query(UserToken)
-        .filter(
-            UserToken.user_id == user_uuid,
-            UserToken.provider == "outlook"
-        )
-        .first()
-    )
-    
-    if not user_token or not user_token.access_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="No Outlook token found. Please connect your Outlook account first."
-        )
-    
-    access_token = user_token.access_token
+    url = "https://graph.microsoft.com/v1.0/me/messages?$top=15&$select=id,subject,sender,receivedDateTime,hasAttachments,bodyPreview,body"
     headers = {"Authorization": f"Bearer {access_token}"}
     
     async with httpx.AsyncClient() as client:
-        response = await client.get(
-            "https://graph.microsoft.com/v1.0/me/messages?$top=15&$select=id,subject,sender,receivedDateTime,hasAttachments,bodyPreview,body",
-            headers=headers
-        )
+        response = await client.get(url, headers=headers)
+        
+        # If token expired on Microsoft side (401), try refreshing token and retrying once
+        if response.status_code == 401 and user_token.refresh_token:
+            refreshed_token = refresh_outlook_token(user_token, db)
+            if refreshed_token:
+                headers = {"Authorization": f"Bearer {refreshed_token}"}
+                response = await client.get(url, headers=headers)
     
     if response.status_code == 200:
         data = response.json()
@@ -248,6 +315,12 @@ async def get_outlook_messages(user: dict, db: Session) -> dict:
             "messages": data.get("value", [])
         }
     
+    if response.status_code == 401:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Outlook session expired. Please reconnect your Outlook account."
+        )
+
     raise HTTPException(
         status_code=response.status_code,
         detail="Failed to fetch messages from Microsoft Graph API."
@@ -255,32 +328,25 @@ async def get_outlook_messages(user: dict, db: Session) -> dict:
 
 async def ingest_outlook_email(message_id: str, user: dict, db: Session) -> dict:
     user_uuid = UUID(str(user["id"]))
+    user_token, access_token = get_valid_outlook_token(user_uuid, db)
     
-    user_token = (
-        db.query(UserToken)
-        .filter(
-            UserToken.user_id == user_uuid,
-            UserToken.provider == "outlook"
-        )
-        .first()
-    )
-    
-    if not user_token or not user_token.access_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Outlook token not found."
-        )
-    
-    access_token = user_token.access_token
+    url = f"https://graph.microsoft.com/v1.0/me/messages/{message_id}"
     headers = {"Authorization": f"Bearer {access_token}"}
     
     async with httpx.AsyncClient() as client:
-        res = await client.get(
-            f"https://graph.microsoft.com/v1.0/me/messages/{message_id}",
-            headers=headers
-        )
+        res = await client.get(url, headers=headers)
+        if res.status_code == 401 and user_token.refresh_token:
+            refreshed_token = refresh_outlook_token(user_token, db)
+            if refreshed_token:
+                headers = {"Authorization": f"Bearer {refreshed_token}"}
+                res = await client.get(url, headers=headers)
     
     if res.status_code != 200:
+        if res.status_code == 401:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Outlook session expired. Please reconnect your Outlook account."
+            )
         raise HTTPException(status_code=res.status_code, detail="Could not retrieve email message details from Outlook.")
     
     msg_data = res.json()
@@ -308,27 +374,25 @@ async def ingest_outlook_email(message_id: str, user: dict, db: Session) -> dict
 
 async def ingest_all_outlook_emails(user: dict, db: Session) -> dict:
     user_uuid = UUID(str(user["id"]))
-    user_token = (
-        db.query(UserToken)
-        .filter(
-            UserToken.user_id == user_uuid,
-            UserToken.provider == "outlook"
-        )
-        .first()
-    )
-    if not user_token or not user_token.access_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Outlook token not found."
-        )
-    access_token = user_token.access_token
+    user_token, access_token = get_valid_outlook_token(user_uuid, db)
+    
+    url = "https://graph.microsoft.com/v1.0/me/messages?$top=15&$select=id,subject,sender,receivedDateTime,hasAttachments,bodyPreview,body"
     headers = {"Authorization": f"Bearer {access_token}"}
+    
     async with httpx.AsyncClient() as client:
-        res = await client.get(
-            "https://graph.microsoft.com/v1.0/me/messages?$top=15&$select=id,subject,sender,receivedDateTime,hasAttachments,bodyPreview,body",
-            headers=headers
-        )
+        res = await client.get(url, headers=headers)
+        if res.status_code == 401 and user_token.refresh_token:
+            refreshed_token = refresh_outlook_token(user_token, db)
+            if refreshed_token:
+                headers = {"Authorization": f"Bearer {refreshed_token}"}
+                res = await client.get(url, headers=headers)
+
     if res.status_code != 200:
+        if res.status_code == 401:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Outlook session expired. Please reconnect your Outlook account."
+            )
         raise HTTPException(status_code=res.status_code, detail="Could not retrieve emails from Outlook.")
     
     messages = res.json().get("value", [])
