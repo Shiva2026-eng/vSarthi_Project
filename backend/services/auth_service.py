@@ -7,7 +7,7 @@ from datetime import timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
+bcrypt_context = CryptContext(schemes=['bcrypt'])
 
 
 def create_user(user: UserRequestModel, db: Session) -> dict:
@@ -15,7 +15,6 @@ def create_user(user: UserRequestModel, db: Session) -> dict:
     user_in_database = db.query(User).filter(func.lower(User.email) == normalized_email).first()
     if user_in_database is not None:
         raise HTTPException(status_code=403, detail='A user already exists with this email')
-    
     new_user = User(
         name=user.name,
         email=normalized_email,
@@ -23,8 +22,6 @@ def create_user(user: UserRequestModel, db: Session) -> dict:
     )
     db.add(new_user)
     db.commit()
-    db.refresh(new_user)
-    
     return {
         "success": True,
         "message": f"{user.name} registered successfully!"
