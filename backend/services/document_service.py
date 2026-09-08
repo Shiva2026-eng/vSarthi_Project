@@ -14,15 +14,12 @@ UPLOAD_DIR = settings.UPLOAD_DIR
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
-async def upload_document(user_id: UUID, db: Session, file: UploadFile) -> dict:
-    try:
-        contents = await file.read()
-        if len(contents) > settings.MAX_FILE_SIZE_BYTES:
-            raise HTTPException(
-                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
-                detail=f"File size exceeds the maximum allowed limit of {settings.MAX_FILE_SIZE_MB}MB.",
-            )
+CHUNK_SIZE = 1024 * 64  # 64 KB chunks
 
+
+async def upload_document(user_id: UUID, db: Session, file: UploadFile) -> dict:
+    filepath = ""
+    try:
         filename = file.filename or "unknown"
         extension = os.path.splitext(filename)[1].lstrip(".")
 
@@ -31,7 +28,7 @@ async def upload_document(user_id: UUID, db: Session, file: UploadFile) -> dict:
             filename=filename,
             mime_type=file.content_type or "application/octet-stream",
             extension=extension,
-            size=len(contents),
+            size=0,
             processing_status="pending",
             file_path="",
         )
@@ -40,10 +37,22 @@ async def upload_document(user_id: UUID, db: Session, file: UploadFile) -> dict:
         db.flush()
 
         filepath = os.path.join(UPLOAD_DIR, f"{document.id}.{extension}")
+        total_size = 0
 
         with open(filepath, "wb") as f:
-            f.write(contents)
+            while chunk := await file.read(CHUNK_SIZE):
+                total_size += len(chunk)
+                if total_size > settings.MAX_FILE_SIZE_BYTES:
+                    f.close()
+                    if os.path.exists(filepath):
+                        os.remove(filepath)
+                    raise HTTPException(
+                        status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                        detail=f"File size exceeds the maximum allowed limit of {settings.MAX_FILE_SIZE_MB}MB.",
+                    )
+                f.write(chunk)
 
+        document.size = total_size
         document.file_path = filepath
         db.commit()
         
@@ -59,9 +68,19 @@ async def upload_document(user_id: UUID, db: Session, file: UploadFile) -> dict:
 
     except HTTPException:
         db.rollback()
+        if filepath and os.path.exists(filepath):
+            try:
+                os.remove(filepath)
+            except OSError:
+                pass
         raise
     except Exception as e:
         db.rollback()
+        if filepath and os.path.exists(filepath):
+            try:
+                os.remove(filepath)
+            except OSError:
+                pass
         raise HTTPException(status_code=500, detail=str(e))
 
 
